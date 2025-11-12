@@ -55,7 +55,12 @@ let handler = async (m, { conn, text, command }) => {
     const pesan = text ? text : 'Panggilan penting ke ruang guru!';
 
     try {
-        const groupMetadata = await conn.groupMetadata(groupId);
+        if (!conn.groupCache) conn.groupCache = {}
+        if (!conn.groupCache[groupId]) {
+            conn.groupCache[groupId] = await conn.groupMetadata(groupId)
+            setTimeout(() => delete conn.groupCache[groupId], 5 * 60 * 1000) // refresh tiap 5 menit
+        }
+        const groupMetadata = conn.groupCache[groupId]
         const currentMembers = groupMetadata.participants.map(p => p.id);
         const validMentions = targets.filter(target => {
              return currentMembers.includes(target) || targets.includes(target); 
