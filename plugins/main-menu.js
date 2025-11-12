@@ -73,8 +73,8 @@ let handler = async (m, { conn, usedPrefix, command, __dirname, text }) => {
         const serverOS = os.release();
 
         // --- PEMBUATAN MENU ---
-        let help = Object.values(global.features)
-            .filter(plugin => !plugin.disabled)
+        let help = Object.values(global.plugins)
+            .filter(plugin => !plugin.disable)
             .map(plugin => ({
                 help: Array.isArray(plugin.help) ? plugin.help : [plugin.help],
                 tags: Array.isArray(plugin.tags) ? plugin.tags : [plugin.tags],
@@ -155,7 +155,7 @@ let handler = async (m, { conn, usedPrefix, command, __dirname, text }) => {
             contextInfo: {
                 mentionedJid: [m.sender],
                 externalAdReply: {
-                    title: global.namabot + ` © ` + year,
+                    title: global.info.namabot + ` © ` + year,
                     body: `Server Uptime: ${uptime}`,
                     thumbnailUrl: global.thum,
                     sourceUrl: global.lgc,

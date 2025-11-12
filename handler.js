@@ -1,4 +1,7 @@
-
+/* XRDHZ-MD
+  Script ini tidak untuk diperjual-belikan atau gratis.
+  Script masih dalam tahap pengembangan mungkin akan ada bug, error dan lain sebagainya.
+*/
 
 import "./settings.js";
 import { smsg } from "./function/simple.js";
@@ -19,14 +22,12 @@ export async function handler(chatUpdate) {
 
     try {
         m = (await smsg(this, m)) || m;
-        if (!conn.storeMentions) conn.storeMentions = {};
+        if (m.sender.endsWith("@broadcast") || m.sender.endsWith("@newsletter")) return;
         if (m?.msg?.contextInfo?.mentionedJid?.length) {
-            const jidMentions = [...new Set(m.msg.contextInfo.mentionedJid.map(jid => conn.getJid(jid)))];
+            const jidMentions = [...new Set(m.msg.contextInfo.mentionedJid.map(jid => conn.getLid(jid)))];
             conn.storeMentions[m.id] = jidMentions;
         }
         if (m.isBaileys) return;
-        if (m.sender.endsWith("@broadcast") || m.sender.endsWith("@newsletter") || m.sender.endsWith("@lid"))
-            return;
         try {
             if (global.db.data == null) await global.loadDatabase();
             let user = global.db.data.users[m.sender];
@@ -99,15 +100,15 @@ export async function handler(chatUpdate) {
                     };
             }
 
-            let setting = global.db.data.settings[conn.user.jid];
-            if (typeof setting !== "object") global.db.data.settings[conn.user.jid] = {};
+            let setting = global.db.data.settings[conn.user.lid];
+            if (typeof setting !== "object") global.db.data.settings[conn.user.lid] = {};
             if (setting) {
                 if (!("antispam" in setting)) setting.antispam = true;
                 if (!("autoread" in setting)) setting.autoread = true;
                 if (!("autobackup" in setting)) setting.autobackup = true;
                 if (!isNumber(setting.backupDate)) setting.backupDate = -1;
             } else
-                global.db.data.settings[conn.user.jid] = {
+                global.db.data.settings[conn.user.lid] = {
                     antispam: true,
                     autoread: true,
                     autobackup: true,
@@ -118,9 +119,10 @@ export async function handler(chatUpdate) {
         }
 
         if (typeof m.text !== "string") m.text = "";
-        const isROwner = [conn.decodeJid(global.conn.user.id), ...global.owner]
-            .map(v => v.replace(/[^0-9]/g, "") + "@s.whatsapp.net")
-            .includes(m.sender);
+        const isROwner = ([...global.owner]
+            .map(v => conn.getLid(v.replace(/[^0-9]/g, "") + "@s.whatsapp.net"))
+            || conn.decodeJid(global.conn.user.lid)).includes(m.sender);
+
         const isOwner = isROwner || m.fromMe;
 
         let usedPrefix;
@@ -129,16 +131,10 @@ export async function handler(chatUpdate) {
                 ? (conn.chats[m.chat] || {}).metadata || (await this.groupMetadata(m.chat).catch(_ => null))
                 : {}) || {};
         const participants = (m.isGroup ? groupMetadata.participants : []) || [];
-        const user =
-            (m.isGroup
-                ? participants.find(u => conn.getJid(u.id) === m.sender || u.PhoneNumber === m.sender)
-                : {}) || {};
-        const bot =
-            (m.isGroup
-                ? participants.find(
-                      u => conn.getJid(u.id) === this.user.jid || u.PhoneNumber === this.user.jid
-                  )
-                : {}) || {};
+        const user = m.isGroup ? participants.find(u => u.id === m.sender) : {};
+        const bot = m.isGroup
+            ? participants.find(u => u.id === conn.getLid(conn.decodeJid(global.conn.user.lid)))
+            : {};
         const isRAdmin = user?.admin === "superadmin" || false;
         const isAdmin = isRAdmin || user?.admin === "admin" || false;
         const isBotAdmin = bot?.admin || false;
@@ -149,15 +145,15 @@ export async function handler(chatUpdate) {
         const isMuted = m.isGroup && global.db.data?.chats[m.chat]?.mute === true;
         const isSewa = m.isGroup && global.db.data?.chats[m.chat]?.sewa === true;
 
-        const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), "./features");
-        for (let name in global.features) {
-            let feature = global.features[name];
-            if (!feature) continue;
-            if (feature?.disabled) continue;
+        const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), "./plugins");
+        for (let name in global.plugins) {
+            let plugin = global.plugins[name];
+            if (!plugin) continue;
+            if (plugin?.disable) continue;
 
             const __filename = path.join(___dirname, name);
             const str2Regex = str => str.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&");
-            let _prefix = feature.customPrefix ? feature.customPrefix : global.prefix;
+            let _prefix = plugin.customPrefix ? plugin.customPrefix : global.prefix;
             let match = (
                 _prefix instanceof RegExp
                     ? [[_prefix.exec(m.text), _prefix]]
@@ -171,9 +167,9 @@ export async function handler(chatUpdate) {
                     : [[[], new RegExp()]]
             ).find(p => p[1]);
 
-            if (typeof feature.before === "function") {
+            if (typeof plugin.before === "function") {
                 if (
-                    await feature.before.call(this, m, {
+                    await plugin.before.call(this, m, {
                         match,
                         conn: this,
                         participants,
@@ -197,7 +193,7 @@ export async function handler(chatUpdate) {
                 )
                     continue;
             }
-            if (typeof feature !== "function") continue;
+            if (typeof plugin !== "function") continue;
             if ((usedPrefix = (match[0] || "")[0])) {
                 let noPrefix = m.text.replace(usedPrefix, "");
                 let [command, ...args] = noPrefix
@@ -208,61 +204,61 @@ export async function handler(chatUpdate) {
                 let _args = noPrefix.trim().split(` `).slice(1);
                 let text = _args.join(` `);
                 command = (command || "").toLowerCase();
-                let fail = feature.fails || global.dFail;
+                let fail = plugin.fails || global.dFail;
                 let isAccept =
-                    feature.command instanceof RegExp
-                        ? feature.command.test(command)
-                        : Array.isArray(feature.command)
-                        ? feature.command.some(cmd =>
+                    plugin.command instanceof RegExp
+                        ? plugin.command.test(command)
+                        : Array.isArray(plugin.command)
+                        ? plugin.command.some(cmd =>
                               cmd instanceof RegExp ? cmd.test(command) : cmd === command
                           )
-                        : typeof feature.command === "string"
-                        ? feature.command === command
+                        : typeof plugin.command === "string"
+                        ? plugin.command === command
                         : false;
 
                 if (!isAccept) continue;
-                m.feature = name;
+                m.plugin = name;
 
                 if (isMuted && (!isROwner || !isAdmin)) return;
 
-                if (feature.rowner && feature.owner && !(isROwner || isOwner)) {
+                if (plugin.rowner && plugin.owner && !(isROwner || isOwner)) {
                     global.dFail("owner", m, this);
                     continue;
                 }
-                if (feature.rowner && !isROwner) {
+                if (plugin.rowner && !isROwner) {
                     global.dFail("rowner", m, this);
                     continue;
                 }
-                if (feature.owner && !isOwner) {
+                if (plugin.owner && !isOwner) {
                     global.dFail("owner", m, this);
                     continue;
                 }
 
-                if (feature.premium && !isPremium) {
+                if (plugin.premium && !isPremium) {
                     global.dFail("premium", m, this);
                     continue;
                 }
 
-                if (feature.group && !m.isGroup) {
+                if (plugin.group && !m.isGroup) {
                     global.dFail("group", m, this);
                     continue;
-                } else if (feature.botAdmin && !isBotAdmin) {
+                } else if (plugin.botAdmin && !isBotAdmin) {
                     global.dFail("botAdmin", m, this);
                     continue;
-                } else if (feature.admin && !isAdmin) {
+                } else if (plugin.admin && !isAdmin) {
                     global.dFail("admin", m, this);
                     continue;
                 }
 
-                if (feature.private && m.isGroup) {
+                if (plugin.private && m.isGroup) {
                     global.dFail("private", m, this);
                     continue;
                 }
-                if (feature.register && !isRegister) {
+                if (plugin.register && !isRegister) {
                     global.dFail("unreg", m, this);
                     continue;
                 }
-                if (feature.restrict) {
+                if (plugin.restrict) {
                     global.dFail("restrict", m, this);
                     continue;
                 }
@@ -297,13 +293,13 @@ export async function handler(chatUpdate) {
                     __filename
                 };
                 try {
-                    await feature.call(this, m, extra);
+                    await plugin.call(this, m, extra);
                 } catch (error) {
                     console.log(error);
                 } finally {
-                    if (typeof feature.after === "function") {
+                    if (typeof plugin.after === "function") {
                         try {
-                            await feature.after.call(this, m, extra);
+                            await plugin.after.call(this, m, extra);
                         } catch (error) {
                             console.log(error);
                         }
@@ -313,9 +309,9 @@ export async function handler(chatUpdate) {
             }
         }
     } catch (error) {
-        global.reloadHandler(true);
+        console.log(error);
     } finally {
-        if (global.autoRead || global.db.data.settings[conn.user.jid].autoread) {
+        if (global.autoRead || global.db.data.settings[conn.user.lid].autoread) {
             await conn.readMessages([m.key]);
         }
         try {
@@ -340,7 +336,7 @@ export async function participantsUpdate({ id, participants, action }) {
             if (chat.sambutan) {
                 let groupMetadata = (await this.groupMetadata(id)) || (conn.chats[id] || {})?.metadata;
                 for (let user of participants) {
-                    const rawJid = (await conn.getJid(user?.id || user?.phoneNumber)) || user.id;
+                    const rawJid = (await conn.getLid(user?.id || user?.phoneNumber)) || user.id;
                     message = (
                         action === "add"
                             ? (chat.sWelcome || conn.sWelcome || "Selamat Datang @user")
@@ -370,7 +366,7 @@ export async function participantsUpdate({ id, participants, action }) {
         case "promote":
         case "demote":
             const rawJid =
-                (await conn.getJid(participants[0]?.id || participants[0]?.phoneNumber)) ||
+                (await conn.getLid(participants[0]?.id || participants[0]?.phoneNumber)) ||
                 participants[0].id;
             message = (
                 action === "promote"
@@ -407,16 +403,16 @@ export async function groupsUpdate(groupsUpdate) {
         const chat = global.db.data?.chats[id];
         if (!chat?.detect) continue;
 
-        const user = await conn.getJid(groupUpdate.author);
-        if (groupUpdate.desc)
+        const user = groupUpdate?.author ? await conn.getLid(groupUpdate.author) : "";
+        if (groupUpdate.desc && user)
             text = (chat?.sDesc || "Deskripsi group diganti oleh @user\n\n@desc")
                 .replace("@user", `@${user.split("@")[0]}`)
                 .replace("@desc", groupUpdate.desc);
-        if (groupUpdate.subject)
+        if (groupUpdate.subject && user)
             text = (chat?.sSubject || "Judul group diganti oleh @user\n\n@subject")
                 .replace("@user", `@${user.split("@")[0]}`)
                 .replace("@subject", groupUpdate.subject);
-        if (groupUpdate.inviteCode)
+        if (groupUpdate.inviteCode && user)
             text = "Link group diganti oleh @user".replace("@user", `@${user.split("@")[0]}`);
         if (groupUpdate.icon) text = "Ikon group telah diganti";
         if (!text) continue;
@@ -452,7 +448,7 @@ global.dFail = (type, m, conn) => {
         sewa: "*PAID GROUP ONLY*",
         unreg: "*YOU ARE NOT REGISTERED YET*",
         restrict: "*RESTRICTED COMMAND*",
-        disabled: "*DISABLED COMMAND*"
+        disable: "*DISABLE COMMAND*"
     }[type];
     if (msg) return conn.reply(m.chat, msg, m);
 };
