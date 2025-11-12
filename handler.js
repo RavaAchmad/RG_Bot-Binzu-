@@ -1,7 +1,4 @@
-/* XRDHZ-MD
-  Script ini tidak untuk diperjual-belikan atau gratis.
-  Script masih dalam tahap pengembangan mungkin akan ada bug, error dan lain sebagainya.
-*/
+
 
 import "./settings.js";
 import { smsg } from "./function/simple.js";

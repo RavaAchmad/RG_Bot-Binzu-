@@ -1,13 +1,13 @@
 let handler = async (m, { conn, text, command }) => {
-    // CONFIG AREA - Area ini doang yang perlu lo otak-atik
+    // CONFIG AREA
     const ruangguruConfig = {
         'rg1': {
             groupId: '120363422919131515@g.us', // ID GRUP RUANG 1
-            // List orang-orang VIP yang mau ditag di rg1
+            // List orang-orang yang mau ditag 
             targets: [
-                '6281212035575@s.whatsapp.net', // Pak Budi (Nomor biasa)
-                '456789123456789@lid',          // Bu Siti (Pake LID, tetep bisa!)
-                '0@s.whatsapp.net'  // Pak Tono
+                '6281212035575@s.whatsapp.net',
+                '456789123456789@lid',         
+                '0@s.whatsapp.net' 
             ]
         },
         'rg2': {
@@ -21,6 +21,22 @@ let handler = async (m, { conn, text, command }) => {
             targets: [
                 // Kalo kosong, nanti kita bikin logikanya biar nge-tag semua (fallback)
                 // atau biarin kosong kalo emang gamau ngetag siapa2.
+            ]
+        },
+        'rg4': {
+            groupId: '120363244719131515@g.us', // ID GRUP RUANG 4
+            targets: [
+                '6281212035575@s.whatsapp.net',
+                '456789123456789@lid',
+                '0@s.whatsapp.net'
+            ]
+        },
+        'rg5': {
+            groupId: '120363244719131515@g.us', // ID GRUP RUANG 5
+            targets: [
+                '6281212035575@s.whatsapp.net',
+                '456789123456789@lid',
+                '0@s.whatsapp.net'
             ]
         }
     };
@@ -62,10 +78,14 @@ let handler = async (m, { conn, text, command }) => {
         }
 
         // 3. Susun Pesan
-        let messageText = `📢 *PANGGILAN TERBATAS* 📢\n`;
-        messageText += `📍 Ruang: ${groupMetadata.subject}\n`;
-        messageText += `💬 Pesan: ${pesan}\n\n`;
-        messageText += `Cc: `; // Biar keren ala email
+        let messageText = `_Hallo Brainies, pejuang PTN 2026_\n\n`;
+        messageText += `KHUSUS untuk jadwal pembelajaran SNBT akan share di grup ini ya, jadi kalau ada temennya yang belum masuk grup ini harap colek colek yaa temen temen 😊\n\n`;
+        messageText += `Jadwal hari ini\n`;
+        messageText += `Sesi 1  (17.00 - 20.30)\n`;
+        messageText += `- SNBT ${command.toUpperCase()}\n\n`;
+        messageText += `Sesi 2  (19.00 - 20.30)\n`;
+        messageText += `- SNBT ${command.toUpperCase()}\n\n`;
+        messageText += `Info kelasnya sudah Kak Indri share kemarin di atas bisa di scroll aja ya atau bisa cek aplikasi temen temen ya. Jika jadwal belum berubah masih dikelas sebelumnya itu masih tahap penyesuaian jadwal kelas terbaru ya. Terima kasih 😊`;
 
         // Loop buat nambahin tag di teksnya biar keliatan visualnya
         for (let jid of validMentions) {
@@ -87,7 +107,7 @@ let handler = async (m, { conn, text, command }) => {
     }
 }
 
-handler.command = /^(rg[1-3])$/i
+handler.command = /^(rg[1-5])$/i
 handler.tags = ['owner']
 handler.owner = true
 
