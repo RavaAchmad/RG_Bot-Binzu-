@@ -4,7 +4,7 @@ let handler = async (m, { conn, text, command }) => {
     // CONFIG AREA
     const ruangguruConfig = {
         'rg1': {
-            groupId: '120363422919131515@g.us', // ID GRUP RUANG 1
+            groupId: '120363391392927133@g.us', // ID GRUP RUANG 1
             displayName: 'R1',
             // List orang-orang yang mau ditag 
             targets: [
@@ -14,21 +14,21 @@ let handler = async (m, { conn, text, command }) => {
             ]
         },
         'rg2': {
-            groupId: '120363288963231515@g.us', // ID GRUP RUANG 2
+            groupId: '120363391392927133@g.us', // ID GRUP RUANG 2
             displayName: 'R2',
             targets: [
                  '628555555555@s.whatsapp.net'  // Cuma satu orang juga bebas
             ]
         },
         'rg3': {
-            groupId: '120363244719131515@g.us', // ID GRUP RUANG 3
+            groupId: '120363391392927133@g.us', // ID GRUP RUANG 3
             displayName: 'R3',
             targets: [
 
             ]
         },
         'rg4': {
-            groupId: '120363244719131515@g.us', // ID GRUP RUANG 4
+            groupId: '120363391392927133@g.us', // ID GRUP RUANG 4
             displayName: 'R4',
             targets: [
                 '6281212035575@s.whatsapp.net',
@@ -37,7 +37,7 @@ let handler = async (m, { conn, text, command }) => {
             ]
         },
         'rg5': {
-            groupId: '120363244719131515@g.us', // ID GRUP RUANG 5
+            groupId: '120363391392927133@g.us', // ID GRUP RUANG 5
             displayName: 'R5',
             targets: [
                 '6281212035575@s.whatsapp.net',
