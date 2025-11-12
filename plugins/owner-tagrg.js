@@ -78,9 +78,9 @@ let handler = async (m, { conn, text, command }) => {
         messageText += `KHUSUS untuk jadwal pembelajaran SNBT akan share di grup ini ya, jadi kalau ada temennya yang belum masuk grup ini harap colek colek yaa temen temen 😊\n\n`;
         messageText += `Jadwal hari ini\n`;
         messageText += `Sesi 1  (17.00 - 20.30)\n`;
-        messageText += `- SNBT @${displayName.toUpperCase()}\n\n`;
+        messageText += `- SNBT @${displayName}\n\n`;
         messageText += `Sesi 2  (19.00 - 20.30)\n`;
-        messageText += `- SNBT @${displayName.toUpperCase()}\n\n`;
+        messageText += `- SNBT @${displayName}\n\n`;
         messageText += `Info kelasnya sudah Kak Indri share kemarin di atas bisa di scroll aja ya atau bisa cek aplikasi temen temen ya. Jika jadwal belum berubah masih dikelas sebelumnya itu masih tahap penyesuaian jadwal kelas terbaru ya. Terima kasih 😊`;
 
         // Loop buat nambahin tag di teksnya biar keliatan visualnya
