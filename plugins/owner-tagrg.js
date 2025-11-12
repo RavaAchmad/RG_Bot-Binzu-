@@ -61,9 +61,7 @@ let handler = async (m, { conn, text, command }) => {
     // Filter target yang valid (masih di grup)
     const validMentions = targets.filter(t => currentMembers.includes(t));
 
-    if (validMentions.length === 0)
-      return m.reply('❌ Target yang mau ditag udah gak ada di grup itu.');
-
+    console.log(`Valid mentions for ${displayName}:`, validMentions);
     // SUSUN PESAN UTAMA
     let messageText = `_Hallo Brainies, pejuang PTN 2026_\n\n`;
     messageText += `KHUSUS untuk jadwal pembelajaran SNBT akan share di grup ini ya, jadi kalau ada temennya yang belum masuk grup ini harap colek colek yaa temen-temen 😊\n\n`;
