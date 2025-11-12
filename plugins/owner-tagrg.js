@@ -2,7 +2,7 @@ let handler = async (m, { conn, text, command }) => {
   // CONFIG AREA
   const ruangguruConfig = {
     'rg1': {
-      groupId: '120363391392927133@g.us',
+      groupId: '120363422919131515@g.us',
       displayName: 'R1',
       targets: [
         '6281212035575@s.whatsapp.net',
@@ -11,17 +11,17 @@ let handler = async (m, { conn, text, command }) => {
       ]
     },
     'rg2': {
-      groupId: '120363391392927133@g.us',
+      groupId: '120363422919131515@g.us',
       displayName: 'R2',
       targets: ['628555555555@s.whatsapp.net']
     },
     'rg3': {
-      groupId: '120363391392927133@g.us',
+      groupId: '120363422919131515@g.us',
       displayName: 'R3',
       targets: []
     },
     'rg4': {
-      groupId: '120363391392927133@g.us',
+      groupId: '120363422919131515@g.us',
       displayName: 'R4',
       targets: [
         '6281212035575@s.whatsapp.net',
@@ -30,7 +30,7 @@ let handler = async (m, { conn, text, command }) => {
       ]
     },
     'rg5': {
-      groupId: '120363391392927133@g.us',
+      groupId: '120363422919131515@g.us',
       displayName: 'R5',
       targets: [
         '6281212035575@s.whatsapp.net',
