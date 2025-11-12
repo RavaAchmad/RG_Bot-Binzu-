@@ -44,11 +44,11 @@ let handler = async (m, { conn, text, command }) => {
 
   try {
     // Caching metadata buat hindarin rate limit
-    if (!conn.groupCache) conn.groupCache = {};
-    if (!conn.groupCache[groupId]) {
-      conn.groupCache[groupId] = await conn.groupMetadata(groupId);
-      setTimeout(() => delete conn.groupCache[groupId], 5 * 60 * 1000);
-    }
+    // if (!conn.groupCache) conn.groupCache = {};
+    // if (!conn.groupCache[groupId]) {
+    //   conn.groupCache[groupId] = await conn.groupMetadata(groupId);
+    //   setTimeout(() => delete conn.groupCache[groupId], 5 * 60 * 1000);
+    // }
 
     const groupMetadata = conn.groupCache[groupId];
     const currentMembers = groupMetadata.participants.map(p => p.id);
@@ -61,8 +61,8 @@ let handler = async (m, { conn, text, command }) => {
     let messageText = `_Hallo Brainies, pejuang PTN 2026_\n\n`;
     messageText += `KHUSUS untuk jadwal pembelajaran SNBT akan share di grup ini ya, jadi kalau ada temennya yang belum masuk grup ini harap colek colek yaa temen-temen 😊\n\n`;
     messageText += `Jadwal hari ini\n`;
-    messageText += `Sesi 1  (17.00 - 20.30)\n- SNBT @${displayName}\n\n`;
-    messageText += `Sesi 2  (19.00 - 20.30)\n- SNBT @${displayName}\n\n`;
+    messageText += `Sesi 1  (17.00 - 20.30)\n- SNBT @${groupId}\n\n`;
+    messageText += `Sesi 2  (19.00 - 20.30)\n- SNBT @${groupId}\n\n`;
     messageText += `Info kelasnya sudah Kak Indri share kemarin di atas bisa di-scroll aja ya, atau bisa cek di aplikasi. Jika jadwal belum berubah, masih tahap penyesuaian jadwal kelas terbaru ya. Terima kasih 😊\n\n`;
 
     // TAMBAHIN MENTION (Hijau beneran)
@@ -78,7 +78,7 @@ let handler = async (m, { conn, text, command }) => {
       contextInfo: {
         mentionedJid: validMentions,
         groupMentions: [
-          { groupSubject: displayName, groupJid: groupId }
+          { groupSubject: `${displayName}`, groupJid: groupId }
         ]
       }
     });
