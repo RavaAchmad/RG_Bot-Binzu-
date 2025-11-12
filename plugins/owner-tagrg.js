@@ -44,11 +44,11 @@ let handler = async (m, { conn, text, command }) => {
 
   try {
     // Caching metadata buat hindarin rate limit
-    // if (!conn.groupCache) conn.groupCache = {};
-    // if (!conn.groupCache[groupId]) {
-    //   conn.groupCache[groupId] = await conn.groupMetadata(groupId);
-    //   setTimeout(() => delete conn.groupCache[groupId], 5 * 60 * 1000);
-    // }
+    if (!conn.groupCache) conn.groupCache = {};
+    if (!conn.groupCache[groupId]) {
+      conn.groupCache[groupId] = await conn.groupMetadata(groupId);
+      setTimeout(() => delete conn.groupCache[groupId], 5 * 60 * 1000);
+    }
 
     const groupMetadata = conn.groupCache[groupId];
     const currentMembers = groupMetadata.participants.map(p => p.id);
