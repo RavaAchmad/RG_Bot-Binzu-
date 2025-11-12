@@ -51,7 +51,7 @@ let handler = async (m, { conn, text, command }) => {
     const config = ruangguruConfig[command];
     if (!config) throw `Waduh, command ${command} belum didaftarin di config nih.`;
 
-    const { groupId, targets } = config;
+    const { groupId, targets, displayName } = config;
     const pesan = text ? text : 'Panggilan penting ke ruang guru!';
 
     try {
