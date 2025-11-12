@@ -6,8 +6,7 @@ let handler = async (m, { conn, text, command }) => {
       displayName: 'R1',
       targets: [
         '6281212035575@s.whatsapp.net',
-        '456789123456789@lid',
-        '0@s.whatsapp.net'
+        '6283830679936@s.whatsapp.net'
       ]
     },
     'rg2': {
@@ -24,18 +23,14 @@ let handler = async (m, { conn, text, command }) => {
       groupId: '120363422919131515@g.us',
       displayName: 'R4',
       targets: [
-        '6281212035575@s.whatsapp.net',
-        '456789123456789@lid',
-        '0@s.whatsapp.net'
+        '6281212035575@s.whatsapp.net'
       ]
     },
     'rg5': {
       groupId: '120363422919131515@g.us',
       displayName: 'R5',
       targets: [
-        '6281212035575@s.whatsapp.net',
-        '456789123456789@lid',
-        '0@s.whatsapp.net'
+        '6281212035575@s.whatsapp.net'
       ]
     }
   };
