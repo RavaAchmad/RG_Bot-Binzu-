@@ -103,7 +103,7 @@ export async function handler(chatUpdate) {
             let setting = global.db.data.settings[conn.user.lid];
             if (typeof setting !== "object") global.db.data.settings[conn.user.lid] = {};
             if (setting) {
-                if (!('self' in settings)) settings.self = false
+                if (!('self' in setting)) setting.self = false
                 if (!("antispam" in setting)) setting.antispam = true;
                 if (!("autoread" in setting)) setting.autoread = true;
                 if (!("autobackup" in setting)) setting.autobackup = true;
