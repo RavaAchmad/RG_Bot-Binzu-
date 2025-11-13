@@ -828,10 +828,14 @@ export function makeWASocket(connectionOptions, options = {}) {
                 switch (m.messageStubType) {
                     case WAMessageStubType.REVOKE:
                     case WAMessageStubType.GROUP_CHANGE_INVITE_LINK:
-                        emitGroupUpdate({ revoke: m.messageStubParameters[0] });
+                        if (m.messageStubParameters && m.messageStubParameters[0]) {
+                            emitGroupUpdate({ revoke: m.messageStubParameters[0] });
+                        }
                         break;
                     case WAMessageStubType.GROUP_CHANGE_ICON:
-                        emitGroupUpdate({ icon: m.messageStubParameters[0] });
+                        if (m.messageStubParameters && m.messageStubParameters[0]) {
+                            emitGroupUpdate({ icon: m.messageStubParameters[0] });
+                        }
                         break;
                     default: {
                         /*  console.log({
