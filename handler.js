@@ -103,12 +103,14 @@ export async function handler(chatUpdate) {
             let setting = global.db.data.settings[conn.user.lid];
             if (typeof setting !== "object") global.db.data.settings[conn.user.lid] = {};
             if (setting) {
+                if (!('self' in settings)) settings.self = false
                 if (!("antispam" in setting)) setting.antispam = true;
                 if (!("autoread" in setting)) setting.autoread = true;
                 if (!("autobackup" in setting)) setting.autobackup = true;
                 if (!isNumber(setting.backupDate)) setting.backupDate = -1;
             } else
                 global.db.data.settings[conn.user.lid] = {
+                    self: false,
                     antispam: true,
                     autoread: true,
                     autobackup: true,
@@ -117,7 +119,8 @@ export async function handler(chatUpdate) {
         } catch (error) {
             console.log(error);
         }
-
+        if (!m.fromMe && opts['self'])
+            return
         if (typeof m.text !== "string") m.text = "";
         const isROwner = ([...global.owner]
             .map(v => conn.getLid(v.replace(/[^0-9]/g, "") + "@s.whatsapp.net"))
@@ -327,6 +330,8 @@ export async function handler(chatUpdate) {
  * @param {import('baileys').BaileysEventMap<unknown>['group-participants.update']} groupsUpdate
  */
 export async function participantsUpdate({ id, participants, action }) {
+	if (opts['self'])
+		return    
     if (this.isHandlerInit) return;
     let chat = global.db.data?.chats[id] || {};
     let message;
@@ -394,6 +399,8 @@ export async function participantsUpdate({ id, participants, action }) {
  * @param {import('baileys').BaileysEventMap<unknown>['groups.update']} groupsUpdate
  */
 export async function groupsUpdate(groupsUpdate) {
+	if (opts['self'])
+		return    
     if (!groupsUpdate) return;
     for (const groupUpdate of groupsUpdate) {
         const id = groupUpdate.id;

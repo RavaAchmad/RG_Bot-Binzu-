@@ -68,7 +68,6 @@ let handler = async (m, { conn, text, command }) => {
              return;
         }
 
-        // 3. Susun Pesan
         let messageText = `_Hallo Brainies, pejuang PTN 2026_\n\n`;
         messageText += `KHUSUS untuk jadwal pembelajaran SNBT akan share di grup ini ya, jadi kalau ada temennya yang belum masuk grup ini harap colek colek yaa temen temen 😊\n\n`;
         messageText += `Jadwal hari ini\n`;
