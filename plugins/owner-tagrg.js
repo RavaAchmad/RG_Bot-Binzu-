@@ -1,4 +1,4 @@
-let handler = async (m, { conn, command, text }) => {
+let handler = async (m, { conn, text, command }) => {
   // CONFIG AREA
   const ruangguruConfig = {
     'rg1': {
@@ -61,11 +61,11 @@ let handler = async (m, { conn, command, text }) => {
     let messageText = `_Hallo Brainies, pejuang PTN 2026_\n\n`;
     messageText += `KHUSUS untuk jadwal pembelajaran SNBT akan share di grup ini ya, jadi kalau ada temennya yang belum masuk grup ini harap colek colek yaa temen-temen 😊\n\n`;
     messageText += `Jadwal hari ini\n`;
-    messageText += `Sesi 1  (17.00 - 20.30)\n- SNBT @${displayName}\n\n`;
-    messageText += `Sesi 2  (19.00 - 20.30)\n- SNBT @${displayName}\n\n`;
+    messageText += `Sesi 1  (17.00 - 20.30)\n- SNBT @${groupId}\n\n`;
+    messageText += `Sesi 2  (19.00 - 20.30)\n- SNBT @${groupId}\n\n`;
     messageText += `Info kelasnya sudah Kak Indri share kemarin di atas bisa di-scroll aja ya, atau bisa cek di aplikasi. Jika jadwal belum berubah, masih tahap penyesuaian jadwal kelas terbaru ya. Terima kasih 😊\n\n`;
 
-    // TAMBAHIN MENTION
+    // TAMBAHIN MENTION (Hijau beneran)
     const aliasMention = validMentions.length > 1
       ? validMentions.map((jid, i) => `@${displayName}${i + 1}`).join(' ')
       : `@${displayName}`;
@@ -92,7 +92,5 @@ let handler = async (m, { conn, command, text }) => {
 };
 
 handler.command = /^(rg[1-5])$/i;
-handler.tags = ['owner'];
-handler.owner = true;
 
 export default handler;
