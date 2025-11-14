@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import { unwatchFile, watchFile, readFileSync } from "fs";
 import chalk from "chalk";
+import { jidNormalizedUser } from 'baileys';
 
 const isNumber = x => typeof x === "number" && !isNaN(x);
 const printMessages = (await import("./function/print.js")).default;
@@ -127,8 +128,11 @@ export async function handler(chatUpdate) {
         const isROwner = ([...global.owner]
             .map(v => conn.getLid(v.replace(/[^0-9]/g, "") + "@s.whatsapp.net"))
             || conn.decodeJid(global.conn.user.lid)).includes(m.sender);
+        const senderJids = jidNormalizedUser(m.sender); // Normalisasi JID buat jaga-jaga
+        const isROwnercustom = global.owner.map(o => `${o}@s.whatsapp.net`).includes(senderJids);
 
-        const isOwner = isROwner || m.fromMe;
+
+        const isOwner = isROwner || m.fromMe || isROwnercustom;
 
         let usedPrefix;
         const groupMetadata =
