@@ -6,22 +6,13 @@ import { unwatchFile, watchFile, readFileSync } from "fs";
 
 export default async function (m, conn = { user: {} }) {
     if (m.fromMe) return;
-
-    if (
-        !m ||
-        !m.message ||
-        m.message.protocolMessage ||
-        m.message.senderKeyDistributionMessage ||
-        m.mtype === "protocolMessage" ||
-        m.mtype === "senderKeyDistributionMessage"
-    )
-        return;
-    if (!m.sender) return;
+    if (!m || !m.message || m.message.protocolMessage || m.message.senderKeyDistributionMessage || m.mtype === "protocolMessage" || m.mtype === "senderKeyDistributionMessage") return;
     const _name = m.pushName ? m.pushName : "unknown";
     const _chat = m.chat.endsWith("@g.us") ? m.chat : "~Private Chat";
-    const sender = m.sender
-        ? await parsePhoneNumber("+" + conn.getNumber(m.sender))?.number?.international
-        : "unknown";
+    const sender = m.sender ? await parsePhoneNumber("+" + conn.getNumber(m.sender))?.number?.international : null;
+    const cleanSender = sender ? sender.replace(/[+\s-]/g, '') : null;
+    const senderLid = await conn.getLidPN(cleanSender + "@s.whatsapp.net");
+    if (!sender || typeof sender !== "string" || sender == undefined) return;
     let user = global.db.data?.users[m.sender];
     let filesize =
         (m.msg
@@ -42,17 +33,16 @@ export default async function (m, conn = { user: {} }) {
     console.log(
         `${chalk.white(" » BOT:")} ${chalk.black(chalk.bgBlue("%s"))}
 ${chalk.white(" » SENDER:")} ${chalk.white("%s")}
+${chalk.white(" » SENDER LID:")} ${chalk.white("%s")}
 ${chalk.white(" » NAME:")} ${chalk.blueBright("%s")}
 ${chalk.white(" » DATE:")} ${chalk.gray("%s")}
 ${chalk.white(" » SEND TO:")} ${chalk.green("%s")}
 ${chalk.white(" » MTYPE:")} ${chalk.yellow("%s")} ${chalk.red("[%s %sB]")}`.trim(),
         global.info.namabot,
         sender,
+        senderLid || "N/A",
         _name,
-        (m.messageTimestamp
-            ? new Date(1000 * (m.messageTimestamp.low || m.messageTimestamp))
-            : new Date()
-        ).toLocaleString("id", { timeZone: "Asia/Jakarta" }),
+        (m.messageTimestamp ? new Date(1000 * (m.messageTimestamp.low || m.messageTimestamp)) : new Date()).toLocaleString("id", { timeZone: "Asia/Jakarta" }),
         _chat,
         m.mtype
             ? m.mtype
