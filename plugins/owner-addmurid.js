@@ -2,7 +2,7 @@
 import { readConfig, writeConfig } from '../json/configManager.js';
 
 // Ganti dengan list nomor mods/owner lo
-const MODS = ['6281234567890@s.whatsapp.net'];
+const MODS = ['6281212035575@s.whatsapp.net', '217333968683183@lid'];
 
 let handler = async (m, { conn, text }) => {
   if (!MODS.includes(m.sender)) {
