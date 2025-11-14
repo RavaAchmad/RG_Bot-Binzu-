@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 // Ganti nama file-nya di sini
-const configPath = path.resolve('../json/brainiesDB.json');
+const configPath = path.resolve("/home/container/rg_bot/json/brainiesDB.json");
 
 async function readConfig() {
   try {
