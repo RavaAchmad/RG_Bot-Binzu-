@@ -71,6 +71,7 @@ export async function handler(chatUpdate) {
                 let chat = global.db.data.chats[m.chat];
                 if (typeof chat !== "object") global.db.data.chats[m.chat] = {};
                 if (chat) {
+                    if (!("self" in chat)) chat.self = false;
                     if (!("antispam" in chat)) chat.antispam = false;
                     if (!("antilink" in chat)) chat.antilink = false;
                     if (!("antivirtex" in chat)) chat.antivirtex = false;
@@ -85,6 +86,7 @@ export async function handler(chatUpdate) {
                     if (!isNumber(chat.sewaDate)) chat.sewaDate = -1;
                 } else
                     global.db.data.chats[m.chat] = {
+                        self: false,
                         antispam: false,
                         antilink: false,
                         antivirtex: false,
