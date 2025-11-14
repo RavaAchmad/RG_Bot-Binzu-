@@ -7,9 +7,10 @@ import "./settings.js";
 import { smsg } from "./function/simple.js";
 import { fileURLToPath } from "url";
 import path from "path";
+import { format } from "util"; // Diambil dari Handler 2
 import { unwatchFile, watchFile, readFileSync } from "fs";
 import chalk from "chalk";
-import { jidNormalizedUser } from 'baileys';
+import { jidNormalizedUser } from "baileys";
 
 const isNumber = x => typeof x === "number" && !isNaN(x);
 const printMessages = (await import("./function/print.js")).default;
@@ -23,12 +24,17 @@ export async function handler(chatUpdate) {
 
     try {
         m = (await smsg(this, m)) || m;
-        if (m.sender.endsWith("@broadcast") || m.sender.endsWith("@newsletter")) return;
+        if (m.sender.endsWith("@broadcast") || m.sender.endsWith("@newsletter")) return; // Update dari Handler 1 dan 2
         if (m?.msg?.contextInfo?.mentionedJid?.length) {
+            if (!conn.storeMentions) conn.storeMentions = {}; // Dari Handler 2
             const jidMentions = [...new Set(m.msg.contextInfo.mentionedJid.map(jid => conn.getLid(jid)))];
             conn.storeMentions[m.id] = jidMentions;
         }
         if (m.isBaileys) return;
+
+        // Mendapatkan LID Bot yang dinormalisasi (dari Handler 2, lebih robust)
+        const decodedBotLid = jidNormalizedUser(conn?.user?.lid) || conn.getLid(jidNormalizedUser(conn?.user?.id)) || "";
+
         try {
             if (global.db.data == null) await global.loadDatabase();
             let user = global.db.data.users[m.sender];
@@ -72,7 +78,8 @@ export async function handler(chatUpdate) {
                 let chat = global.db.data.chats[m.chat];
                 if (typeof chat !== "object") global.db.data.chats[m.chat] = {};
                 if (chat) {
-                    if (!("self" in chat)) chat.self = false;
+                    // Menambahkan 'self' kembali ke chat database (dipertahankan dari Handler 1)
+                    if (!("self" in chat)) chat.self = false; 
                     if (!("antispam" in chat)) chat.antispam = false;
                     if (!("antilink" in chat)) chat.antilink = false;
                     if (!("antivirtex" in chat)) chat.antivirtex = false;
@@ -87,7 +94,7 @@ export async function handler(chatUpdate) {
                     if (!isNumber(chat.sewaDate)) chat.sewaDate = -1;
                 } else
                     global.db.data.chats[m.chat] = {
-                        self: false,
+                        self: false, // Ditambahkan kembali dari Handler 1
                         antispam: false,
                         antilink: false,
                         antivirtex: false,
@@ -103,17 +110,19 @@ export async function handler(chatUpdate) {
                     };
             }
 
-            let setting = global.db.data.settings[conn.user.lid];
-            if (typeof setting !== "object") global.db.data.settings[conn.user.lid] = {};
+            let setting = global.db.data.settings[decodedBotLid]; // Menggunakan decodedBotLid dari Handler 2
+            if (typeof setting !== "object") global.db.data.settings[decodedBotLid] = {};
             if (setting) {
-                if (!('self' in setting)) setting.self = false
+                if (!('self' in setting)) setting.self = false // Ditambahkan kembali dari Handler 1
+                if (!("chatMode" in setting)) setting.chatMode = ""; // Dari Handler 2
                 if (!("antispam" in setting)) setting.antispam = true;
                 if (!("autoread" in setting)) setting.autoread = true;
                 if (!("autobackup" in setting)) setting.autobackup = true;
                 if (!isNumber(setting.backupDate)) setting.backupDate = -1;
             } else
-                global.db.data.settings[conn.user.lid] = {
-                    self: false,
+                global.db.data.settings[decodedBotLid] = {
+                    self: false, // Ditambahkan kembali dari Handler 1
+                    chatMode: "", // Dari Handler 2
                     antispam: true,
                     autoread: true,
                     autobackup: true,
@@ -122,37 +131,38 @@ export async function handler(chatUpdate) {
         } catch (error) {
             console.log(error);
         }
+        
+        // LOGIC PENTING: PENGECUALIAN MODE SELF (Diambil dari Handler 1)
         if (!m.fromMe && opts['self'])
             return
+            
         if (typeof m.text !== "string") m.text = "";
-        const isROwner = ([...global.owner]
-            .map(v => conn.getLid(v.replace(/[^0-9]/g, "") + "@s.whatsapp.net"))
-            || conn.decodeJid(global.conn.user.lid)).includes(m.sender);
-        const senderJids = jidNormalizedUser(m.sender); // Normalisasi JID buat jaga-jaga
-        const isROwnercustom = global.owner.map(o => `${o}@s.whatsapp.net`).includes(senderJids);
-
-
-        const isOwner = isROwner || m.fromMe || isROwnercustom;
+        
+        // Owner Check yang Robust (Diambil dari Handler 2)
+        const decodedOwnLid = await Promise.all(global.owner.map(o => conn.getLidPN(`${o.replace(/[^0-9]/g, "")}@s.whatsapp.net`)));
+        const isROwner = ([...decodedOwnLid] || decodedBotLid).includes(m.sender);
+        const isOwner = isROwner || m.fromMe || false; // Disesuaikan dengan Handler 2, tapi Handler 1 lebih fleksibel. Kita gunakan Handler 2.
 
         let usedPrefix;
-        const groupMetadata =
-            (m.isGroup
-                ? (conn.chats[m.chat] || {}).metadata || (await this.groupMetadata(m.chat).catch(_ => null))
-                : {}) || {};
+        const groupMetadata = (m.isGroup ? (conn.chats[m.chat] || {}).metadata || (await this.groupMetadata(m.chat).catch(_ => null)) : {}) || {};
         const participants = (m.isGroup ? groupMetadata.participants : []) || [];
         const user = m.isGroup ? participants.find(u => u.id === m.sender) : {};
-        const bot = m.isGroup
-            ? participants.find(u => u.id === conn.getLid(conn.decodeJid(global.conn.user.lid)))
-            : {};
+        const bot = m.isGroup ? participants.find(u => u.id === decodedBotLid) : {};
         const isRAdmin = user?.admin === "superadmin" || false;
         const isAdmin = isRAdmin || user?.admin === "admin" || false;
         const isBotAdmin = bot?.admin || false;
 
         const isRegister = global.db.data?.users[m.sender]?.register === true;
-        const isPremium = isROwner || global.db.data?.users[m.sender]?.premium === true;
+        const isPremium = global.db.data?.users[m.sender]?.premium === true;
         const isBannned = global.db.data?.users[m.sender]?.banned === true;
         const isMuted = m.isGroup && global.db.data?.chats[m.chat]?.mute === true;
         const isSewa = m.isGroup && global.db.data?.chats[m.chat]?.sewa === true;
+        const chatMode = global.db.data?.settings[decodedBotLid]?.chatMode;
+
+        // Pengecekan Mode Chat (Dari Handler 2)
+        if ((chatMode === "pconly" || opts["pconly"]) && !isPremium && !isOwner && m.isGroup) return;
+        if ((chatMode === "gconly" || opts["gconly"]) && !isPremium && !isOwner && !m.isGroup) return;
+        if ((chatMode === "sewaonly" || opts["sewaonly"]) && !isPremium && !isOwner && !isSewa && m.isGroup) return;
 
         const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), "./plugins");
         for (let name in global.plugins) {
@@ -218,9 +228,7 @@ export async function handler(chatUpdate) {
                     plugin.command instanceof RegExp
                         ? plugin.command.test(command)
                         : Array.isArray(plugin.command)
-                        ? plugin.command.some(cmd =>
-                              cmd instanceof RegExp ? cmd.test(command) : cmd === command
-                          )
+                        ? plugin.command.some(cmd => (cmd instanceof RegExp ? cmd.test(command) : cmd === command))
                         : typeof plugin.command === "string"
                         ? plugin.command === command
                         : false;
@@ -229,6 +237,8 @@ export async function handler(chatUpdate) {
                 m.plugin = name;
 
                 if (isMuted && (!isROwner || !isAdmin)) return;
+                // Pengecekan banned yang lebih ketat (dari Handler 2)
+                if (isBannned && (!isROwner || !isOwner)) return;
 
                 if (plugin.rowner && plugin.owner && !(isROwner || isOwner)) {
                     global.dFail("owner", m, this);
@@ -303,8 +313,22 @@ export async function handler(chatUpdate) {
                 };
                 try {
                     await plugin.call(this, m, extra);
-                } catch (error) {
-                    console.log(error);
+                } catch (e) {
+                    console.log(e);
+                    // Error Reporting ke Owner (Dari Handler 2)
+                    const text = format(e);
+                    if (e.name) {
+                        const own = decodedOwnLid[0];
+                        if (own) {
+                            let msg = `*『 ERROR MESSAGE 』*\n`;
+                            msg += `*📂 PLUGIN :* ${m.plugin}\n`;
+                            msg += `*👤 SENDER :* ${m.sender}\n`;
+                            msg += `*📄 CHAT :* ${m.chat}\n`;
+                            msg += `*📥 COMMAND :* ${usedPrefix + command}\n`;
+                            msg += `*🔒 ERROR :*\n${text}`;
+                            await conn.reply(own, msg);
+                        }
+                    }
                 } finally {
                     if (typeof plugin.after === "function") {
                         try {
@@ -320,9 +344,7 @@ export async function handler(chatUpdate) {
     } catch (error) {
         console.log(error);
     } finally {
-        if (global.autoRead || global.db.data.settings[conn.user.lid].autoread) {
-            await conn.readMessages([m.key]);
-        }
+        if (global.autoRead || global.db.data.settings[decodedBotLid].autoread) await conn.readMessages([m.key]);
         try {
             await printMessages(m, this);
         } catch (e) {
@@ -336,67 +358,99 @@ export async function handler(chatUpdate) {
  * @param {import('baileys').BaileysEventMap<unknown>['group-participants.update']} groupsUpdate
  */
 export async function participantsUpdate({ id, participants, action }) {
+    // LOGIC PENTING: PENGECUALIAN MODE SELF (Diambil dari Handler 1)
 	if (opts['self'])
 		return    
-    if (this.isHandlerInit) return;
-    let chat = global.db.data?.chats[id] || {};
-    let message;
-    switch (action) {
-        case "add":
-        case "remove":
-            if (chat.sambutan) {
-                let groupMetadata = (await this.groupMetadata(id)) || (conn.chats[id] || {})?.metadata;
-                for (let user of participants) {
-                    const rawJid = (await conn.getLid(user?.id || user?.phoneNumber)) || user.id;
-                    message = (
-                        action === "add"
-                            ? (chat.sWelcome || conn.sWelcome || "Selamat Datang @user")
-                                  .replace("@subject", await this.getName(id))
-                                  .replace(
-                                      "@desc",
-                                      groupMetadata.desc
-                                          ? String.fromCharCode(8206).repeat(4001) + groupMetadata.desc
-                                          : ""
-                                  )
-                            : chat.sBye || conn.sBye || "Selamat Tinggal @user"
-                    ).replace("@user", "@" + rawJid.split("@")[0]);
+    try {
+        if (this.isHandlerInit) return;
+        let chat = global.db.data?.chats[id] || {};
 
-                    await this.sendMessage(
-                        id,
-                        {
-                            text: message,
-                            contextInfo: {
-                                mentionedJid: [rawJid]
-                            }
-                        },
-                        { quoted: null }
-                    );
-                }
-            }
-            break;
-        case "promote":
-        case "demote":
-            const rawJid =
-                (await conn.getLid(participants[0]?.id || participants[0]?.phoneNumber)) ||
-                participants[0].id;
-            message = (
-                action === "promote"
-                    ? chat.sPromote || conn.sPromote || "Selamat @user telah menjadi Admin"
-                    : chat.sDemote || conn.sDemote || "@user telah diberhentikan sebagai Admin"
-            ).replace("@user", "@" + rawJid.split("@")[0]);
+        let message;
+        switch (action) {
+            case "add":
+            case "remove":
+                if (chat?.sambutan) {
+                    let groupMetadata = (await this.groupMetadata(id)) || (conn.chats[id] || {})?.metadata || {};
+                    for (let user of participants) {
+                        let lid = (user?.id).decodeJid();
+                        if (!lid) continue;
 
-            await this.sendMessage(
-                id,
-                {
-                    text: message,
-                    contextInfo: {
-                        mentionedJid: [rawJid]
+                        if (lid.endsWith("@s.whatsapp.net")) lid = await conn.getLidPN(lid);
+
+                        let pp;
+                        try {
+                            pp = { url: await conn.profilePictureUrl(lid, "image") };
+                        } catch (e) {
+                            pp = { url: await conn.profilePictureUrl(id, "image") };
+                        }
+
+                        message = (
+                            action === "add"
+                                ? (chat.sWelcome || conn.sWelcome || "Selamat Datang @user")
+                                      .replace("@subject", await this.getName(id))
+                                      .replace("@desc", groupMetadata.desc ? String.fromCharCode(8206).repeat(4001) + groupMetadata?.desc : "")
+                                : chat.sBye || conn.sBye || "Selamat Tinggal @user"
+                        ).replace("@user", "@" + lid.split("@")[0]);
+
+                        // Menggunakan logic kirim pesan dengan gambar/text (Dari Handler 2)
+                        try {
+                            await this.sendMessage(
+                                id,
+                                {
+                                    image: pp,
+                                    caption: message,
+                                    mimetype: "image/jpeg",
+                                    contextInfo: {
+                                        mentionedJid: [lid]
+                                    }
+                                },
+                                { quoted: null }
+                            );
+                        } catch (e) {
+                            await this.sendMessage(
+                                id,
+                                {
+                                    text: message,
+                                    contextInfo: {
+                                        mentionedJid: [lid]
+                                    }
+                                },
+                                { quoted: null }
+                            );
+                        }
                     }
-                },
-                { quoted: null }
-            );
+                }
+                break;
 
-            break;
+            case "promote":
+            case "demote":
+                // Menggunakan chat.detect untuk promote/demote (Dari Handler 2)
+                if (chat?.detect) {
+                    for (let user of participants) {
+                        let lid = (user?.id).decodeJid();
+                        if (!lid) continue;
+
+                        if (lid.endsWith("@s.whatsapp.net")) lid = await conn.getLidPN(lid);
+                        message = (
+                            action === "promote" ? chat.sPromote || conn.sPromote || "Selamat @user telah menjadi Admin" : chat.sDemote || conn.sDemote || "@user telah diberhentikan sebagai Admin"
+                        ).replace("@user", "@" + lid.split("@")[0]);
+
+                        await this.sendMessage(
+                            id,
+                            {
+                                text: message,
+                                contextInfo: {
+                                    mentionedJid: [lid]
+                                }
+                            },
+                            { quoted: null }
+                        );
+                    }
+                }
+                break;
+        }
+    } catch (e) {
+        console.error(e);
     }
 }
 
@@ -405,34 +459,38 @@ export async function participantsUpdate({ id, participants, action }) {
  * @param {import('baileys').BaileysEventMap<unknown>['groups.update']} groupsUpdate
  */
 export async function groupsUpdate(groupsUpdate) {
+    // LOGIC PENTING: PENGECUALIAN MODE SELF (Diambil dari Handler 1)
 	if (opts['self'])
-		return    
-    if (!groupsUpdate) return;
-    for (const groupUpdate of groupsUpdate) {
-        const id = groupUpdate.id;
-        if (!id) continue;
+		return
+    try {
+        if (!groupsUpdate) return;
+        for (const groupUpdate of groupsUpdate) {
+            const id = groupUpdate.id;
+            if (!id) continue;
 
-        let text = "";
-        const chat = global.db.data?.chats[id];
-        if (!chat?.detect) continue;
+            let text = "";
+            const chat = global.db.data?.chats[id];
+            if (!chat?.detect) continue;
 
-        const user = groupUpdate?.author ? await conn.getLid(groupUpdate.author) : "";
-        if (groupUpdate.desc && user)
-            text = (chat?.sDesc || "Deskripsi group diganti oleh @user\n\n@desc")
-                .replace("@user", `@${user.split("@")[0]}`)
-                .replace("@desc", groupUpdate.desc);
-        if (groupUpdate.subject && user)
-            text = (chat?.sSubject || "Judul group diganti oleh @user\n\n@subject")
-                .replace("@user", `@${user.split("@")[0]}`)
-                .replace("@subject", groupUpdate.subject);
-        if (groupUpdate.inviteCode && user)
-            text = "Link group diganti oleh @user".replace("@user", `@${user.split("@")[0]}`);
-        if (groupUpdate.icon) text = "Ikon group telah diganti";
-        if (!text) continue;
-        await this.sendMessage(id, {
-            text,
-            mentions: await conn.parseMention(text)
-        });
+            if (groupUpdate?.author) {
+                let user = (groupUpdate?.author).decodeJid();
+                if (user?.endsWith("@s.whatsapp.net")) user = await conn.getLidPN(user);
+
+                // Menggunakan format pesan yang lebih baik dan robust LID (Dari Handler 2)
+                if (groupUpdate.desc && user) text = (chat?.sDesc || "*Deskripsi group diganti oleh* @user\n\n@desc").replace("@user", `@${user.split("@")[0]}`).replace("@desc", groupUpdate.desc);
+                if (groupUpdate.subject && user)
+                    text = (chat?.sSubject || "*Judul group diganti oleh* @user\n\n@subject").replace("@user", `@${user.split("@")[0]}`).replace("@subject", groupUpdate.subject);
+                if (groupUpdate.inviteCode && user) text = "*Link group diganti oleh* @user".replace("@user", `@${user.split("@")[0]}`);
+                if (!text) continue;
+                await this.sendMessage(id, {
+                    text,
+                    mentions: [user]
+                });
+            }
+            if (groupUpdate.icon) conn.reply(id, "*Ikon group telah diganti*");
+        }
+    } catch (e) {
+        console.error(e);
     }
 }
 
@@ -441,9 +499,9 @@ export async function groupsUpdate(groupsUpdate) {
  * @param {import('baileys').BaileysEventMap<unknown>['message.delete']} message
  */
 export async function catchDeleted(message) {
-    if (!message) return;
     try {
-        console.log(message);
+        if (!message) return;
+        // console.log(message);
     } catch (error) {
         console.error(error);
     }

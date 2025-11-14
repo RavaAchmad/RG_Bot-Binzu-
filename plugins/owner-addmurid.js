@@ -1,5 +1,5 @@
 // addmurid.js
-import { readConfig, writeConfig } from '../function/configManager.js';
+import { readConfig, writeConfig } from '../json/configManager.js';
 
 // Ganti dengan list nomor mods/owner lo
 const MODS = ['6281234567890@s.whatsapp.net'];

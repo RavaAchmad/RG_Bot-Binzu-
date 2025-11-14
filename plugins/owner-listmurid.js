@@ -1,5 +1,5 @@
 // listmurid.js
-import { readConfig } from '../function/configManager.js';
+import { readConfig } from '../json/configManager.js';
 
 let handler = async (m, { conn, text }) => {
   const rombel = text.trim().toUpperCase();
