@@ -44,6 +44,9 @@ const {
  * @returns
  */
 export function makeWASocket(connectionOptions, options = {}) {
+   if (!conn.storeLid) conn.storeLid = {};
+   if (!conn.storeJid) conn.storeJid = {};
+   if (!conn.groupCache) conn.groupCache = {};
    let conn = _makeWASocket(connectionOptions);
    let sock = Object.defineProperties(conn, {
       // conn.chats
