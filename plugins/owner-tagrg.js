@@ -1,42 +1,53 @@
+import { readConfig } from '../json/configManager.js';
+
 let handler = async (m, { conn, text, command }) => {
-  // CONFIG AREA
-  const ruangguruConfig = {
-    'rg1': {
-      groupId: '120363422919131515@g.us',
-      displayName: 'R1',
-      targets: [
-        '6281212035575'
-      ]
-    },
-    'rg2': {
-      groupId: '120363422919131515@g.us',
-      displayName: 'R2',
-      targets: ['628555555555']
-    },
-    'rg3': {
-      groupId: '120363422919131515@g.us',
-      displayName: 'R3',
-      targets: []
-    },
-    'rg4': {
-      groupId: '120363422919131515@g.us',
-      displayName: 'R4',
-      targets: ['6281212035575']
-    },
-    'rg5': {
-      groupId: '120363422919131515@g.us',
-      displayName: 'R5',
-      targets: ['6281212035575']
-    }
-  };
-
-  // CEK CONFIG
-  const config = ruangguruConfig[command.toLowerCase()];
-  if (!config) return m.reply(`Waduh, command *${command}* belum didaftarin di config nih.`);
-
-  const { groupId, targets, displayName } = config;
-
   try {
+    // Load config dari brainiesDB.json
+    const brainiesDB = await readConfig();
+    
+    if (!brainiesDB || Object.keys(brainiesDB).length === 0) {
+      return m.reply('⚠️ Gagal load database brainies. File kosong atau error.');
+    }
+
+    // Extract groupId dari config
+    const groupId = Array.isArray(brainiesDB.groupId) 
+      ? brainiesDB.groupId[0] 
+      : brainiesDB.groupId || '120363422919131515@g.us';
+
+    // Map command ke room (rg1 -> R1, rg2 -> R2, dst)
+    const roomMap = {
+      'rg1': 'R1',
+      'rg2': 'R2',
+      'rg3': 'R3',
+      'rg4': 'R4',
+      'rg5': 'R5'
+    };
+
+    const displayName = roomMap[command.toLowerCase()];
+    
+    if (!displayName || !brainiesDB[displayName]) {
+      return m.reply(`Waduh, command *${command}* belum ada di database nih.`);
+    }
+
+    // Get targets dari room yang dipilih
+    const roomData = brainiesDB[displayName];
+    const targets = [];
+
+    // Extract semua nomor dari room (support string & array)
+    for (let [name, numbers] of Object.entries(roomData)) {
+      if (Array.isArray(numbers)) {
+        targets.push(...numbers);
+      } else if (typeof numbers === 'string') {
+        targets.push(numbers);
+      }
+    }
+
+    if (targets.length === 0) {
+      return m.reply(`⚠️ Room ${displayName} kosong. Belum ada member yang terdaftar.`);
+    }
+
+    console.log(`${displayName} targets:`, targets);
+
     // Caching metadata buat hindarin rate limit
     if (!conn.groupCache) conn.groupCache = {};
     if (!conn.groupCache[groupId]) {
@@ -49,10 +60,11 @@ let handler = async (m, { conn, text, command }) => {
 
     // Convert target numbers ke LID format
     const validMentions = [];
+    const memberNames = []; // Untuk display siapa aja yang di-tag
+
     for (let number of targets) {
       // Normalize number (hapus semua non-digit)
       const cleanNumber = number.replace(/\D/g, '');
-      const jid = `${cleanNumber}@s.whatsapp.net`;
       
       // Cari participant yang match
       const participant = participants.find(p => {
@@ -63,68 +75,75 @@ let handler = async (m, { conn, text, command }) => {
       if (participant && participant.id) {
         // Pakai LID dari participant
         validMentions.push(participant.id);
+        
+        // Cari nama member dari database
+        const memberName = Object.entries(roomData).find(([name, nums]) => {
+          const numArray = Array.isArray(nums) ? nums : [nums];
+          return numArray.includes(number);
+        })?.[0];
+        
+        if (memberName) memberNames.push(memberName);
       } else {
         // Fallback: coba convert JID ke LID
+        const jid = `${cleanNumber}@s.whatsapp.net`;
         const lid = conn.getLid(jid);
         // Check apakah LID ada di participants
         if (participants.some(p => p.id === lid)) {
           validMentions.push(lid);
+          
+          const memberName = Object.entries(roomData).find(([name, nums]) => {
+            const numArray = Array.isArray(nums) ? nums : [nums];
+            return numArray.includes(number);
+          })?.[0];
+          
+          if (memberName) memberNames.push(memberName);
         }
       }
     }
 
     if (validMentions.length === 0) {
-      return m.reply(`⚠️ Gak ada target yang valid buat ${displayName}. Cek nomornya atau mereka udah keluar grup.`);
+      return m.reply(`⚠️ Gak ada member ${displayName} yang ada di grup ini. Mungkin semua udah keluar atau nomor salah.`);
     }
 
     console.log(`Valid mentions for ${displayName}:`, validMentions);
+    console.log(`Member names:`, memberNames);
 
     // SUSUN PESAN UTAMA
     let messageText = `_Hallo Brainies, pejuang PTN 2026_\n\n`;
     messageText += `KHUSUS untuk jadwal pembelajaran SNBT akan share di grup ini ya, jadi kalau ada temennya yang belum masuk grup ini harap colek colek yaa temen-temen 😊\n\n`;
     messageText += `Jadwal hari ini\n`;
-    messageText += `Sesi 1  (17.00 - 20.30)\n- SNBT\n\n`;
-    messageText += `Sesi 2  (19.00 - 20.30)\n- SNBTv @${groupId}\n\n`;
+    messageText += `Sesi 1  (17.00 - 20.30)\n- SNBT ${groupId}\n\n`;
+    messageText += `Sesi 2  (19.00 - 20.30)\n- SNBT ${groupId}\n\n`;
     messageText += `Info kelasnya sudah Kak Indri share kemarin di atas bisa di-scroll aja ya, atau bisa cek di aplikasi. Jika jadwal belum berubah, masih tahap penyesuaian jadwal kelas terbaru ya. Terima kasih 😊\n\n`;
 
-    // METODE 1: Display custom alias dengan hidden mention
-    // Bikin alias text pendek
-    const aliasText = validMentions.length > 1
-      ? validMentions.map((_, i) => `${displayName}${i + 1}`).join(', ')
-      : displayName;
-    
-    // messageText += `*Tag:* ${aliasText}\n`;
-    
-    // Hidden mention (pakai zero-width space)
-    const hiddenMentions = validMentions
-      .map(lid => `@${lid.split('@')[0]}`)
-      .join(' ');
-    
-    // messageText += `\n‎${hiddenMentions}`; // ‎ = Left-to-Right Mark (U+200E)
+    // Display custom alias (R1, R2, dst)
 
-    // KIRIM PESAN dengan LID format
+    // KIRIM PESAN dengan LID format di mentions
     // await conn.sendMessage(groupId, {
     //   text: messageText,
-    //   mentions: validMentions // Pakai LID format
+    //   mentions: validMentions // WhatsApp akan auto-notify yang di-mention
     // });
+
     await conn.sendMessage(groupId, {
       text: messageText,
       contextInfo: {
         mentionedJid: validMentions,
         groupMentions: [
-          { groupSubject: `${displayName}`, groupJid: groupId }
+          { groupSubject: `${roomMap}`, groupJid: groupId }
         ]
       }
     });
 
-    m.reply(`✅ Sukses manggil ${validMentions.length} orang (${aliasText}) di ${groupMetadata.subject}!`);
+    m.reply(`✅ Sukses tag ${displayName}!\n📊 ${validMentions.length}/${targets.length} member berhasil di-mention\n👥 ${memberNames.join(', ')}`);
 
   } catch (e) {
     console.error('Error di ruangguru command:', e);
-    m.reply(`⚠️ Gagal bosku: ${e.message || 'Unknown error'}`);
+    m.reply(`⚠️ Gagal bosku: ${e.message || 'Unknown error'}\n\nCek log untuk detail.`);
   }
 };
 
 handler.command = /^(rg[1-5])$/i;
+handler.group = true;
+handler.admin = true;
 
 export default handler;
