@@ -143,7 +143,5 @@ let handler = async (m, { conn, text, command }) => {
 };
 
 handler.command = /^(rg[1-5])$/i;
-handler.group = true;
-handler.admin = true;
 
 export default handler;
