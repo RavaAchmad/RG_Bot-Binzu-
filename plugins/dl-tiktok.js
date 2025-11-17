@@ -175,6 +175,8 @@ if (videoUrl) {
 }
 
 handler.command = ['ttv', 'tta', 'tt'];
+handler.help = ['tt'].map(v => v + ' <url>');
+handler.tags = ['downloader'];
 handler.xmaze = true;
 handler.limit = true;
 export default handler
