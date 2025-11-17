@@ -5,8 +5,7 @@ let handler = async (m, { conn, text, command }) => {
       groupId: '120363422919131515@g.us',
       displayName: 'R1',
       targets: [
-        '6281212035575',
-        '6283830679936'
+        '6281212035575'
       ]
     },
     'rg2': {
