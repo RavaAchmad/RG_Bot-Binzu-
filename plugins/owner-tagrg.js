@@ -94,14 +94,14 @@ let handler = async (m, { conn, text, command }) => {
       ? validMentions.map((_, i) => `${displayName}${i + 1}`).join(', ')
       : displayName;
     
-    messageText += `*Tag:* ${aliasText}\n`;
+    // messageText += `*Tag:* ${aliasText}\n`;
     
     // Hidden mention (pakai zero-width space)
     const hiddenMentions = validMentions
       .map(lid => `@${lid.split('@')[0]}`)
       .join(' ');
     
-    messageText += `\n‎${hiddenMentions}`; // ‎ = Left-to-Right Mark (U+200E)
+    // messageText += `\n‎${hiddenMentions}`; // ‎ = Left-to-Right Mark (U+200E)
 
     // KIRIM PESAN dengan LID format
     // await conn.sendMessage(groupId, {
