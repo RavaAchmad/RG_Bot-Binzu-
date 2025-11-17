@@ -25,24 +25,32 @@ export async function handler(chatUpdate) {
     try {
         m = (await smsg(this, m)) || m;
         if (m.sender.endsWith("@broadcast") || m.sender.endsWith("@newsletter")) return;
+        if (!conn.storeLid) conn.storeLid = {};
+        if (!conn.storeJid) conn.storeJid = {};
+        if (!conn.groupCache) conn.groupCache = {};
+        if (!conn.storeMentions) conn.storeMentions = {};
         if (m?.msg?.contextInfo?.mentionedJid?.length) {
-            if (!conn.storeMentions) conn.storeMentions = {};
             const jidMentions = [...new Set(m.msg.contextInfo.mentionedJid.map(jid => conn.getLid(jid)))];
             conn.storeMentions[m.id] = jidMentions;
         }
         if (m.isBaileys) return;
 
         const botJid = jidNormalizedUser(conn?.user?.id) || "";
-        const botLid = conn?.user?.lid ? jidNormalizedUser(conn.user.lid) : conn.getLid(botJid);
+        const botLid = conn?.user?.lid ? jidNormalizedUser(conn.user.lid) : (botJid ? conn.getLid(botJid) : "");
+        
         if (botJid && botLid) {
             conn.syncLidMapping(botJid, botLid);
         }
+        
         const senderJid = m.sender || "";
-        const senderLid = conn.getLid(senderJid);
-        if (senderJid && senderLid) {
+        const senderLid = senderJid ? conn.getLid(senderJid) : "";
+        
+        if (senderJid && senderLid && senderJid !== senderLid) {
             conn.syncLidMapping(senderJid, senderLid);
-        }        
-        const decodedBotLid = jidNormalizedUser(conn?.user?.lid) || conn.getLid(jidNormalizedUser(conn?.user?.id)) || "";
+        }
+        
+        // Use botLid for database key
+        const decodedBotLid = botLid || jidNormalizedUser(conn?.user?.lid) || "";
 
         try {
             if (global.db.data == null) await global.loadDatabase();
@@ -148,7 +156,7 @@ export async function handler(chatUpdate) {
         const decodedOwnLid = await Promise.all(global.owner.map(o => conn.getLidPN(`${o.replace(/[^0-9]/g, "")}@s.whatsapp.net`)));
         const isROwner = ([...decodedOwnLid] || decodedBotLid).includes(m.sender) || conn.isOwner(m.sender, global.owner.map(o => o.replace(/[^0-9]/g, "")));
         const isOwner = isROwner || m.fromMe || false; 
-        
+
         let usedPrefix;
         const groupMetadata = (m.isGroup ? (conn.chats[m.chat] || {}).metadata || (await this.groupMetadata(m.chat).catch(_ => null)) : {}) || {};
         const participants = (m.isGroup ? groupMetadata.participants : []) || [];
