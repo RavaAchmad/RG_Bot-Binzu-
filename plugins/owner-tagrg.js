@@ -177,7 +177,7 @@ let handler = async (m, { conn, text, command }) => {
 
     reportText += `📋 *Daftar Member yang Di-Tag:*\n`;
     memberList.forEach((mem, idx) => {
-      reportText += `${idx + 1}. ${mem.name}\n   📞 ${mem.number}\n   🆔 @${mem.format}\n`;
+      reportText += `${idx + 1}. ${mem.name}\n   📞 ${mem.number}\n   🆔 ${mem.format}\n   @${mem.number}\n\n`;
     });
 
     reportText += `\n💡 *Note:*\n` +
