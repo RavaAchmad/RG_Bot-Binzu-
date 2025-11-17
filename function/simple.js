@@ -81,6 +81,7 @@ export function makeWASocket(connectionOptions, options = {}) {
             return jid.decodeJid();
          }
       },
+      //conn.getJid
       getJid: {
          value(lid) {
             if (!conn.storeJid) conn.storeJid = {};
@@ -128,6 +129,7 @@ export function makeWASocket(connectionOptions, options = {}) {
             return sender;
          }
       },
+      //conn.syncLidMapping
       syncLidMapping: {
          value(jid, lid) {
             if (!jid || !lid) return;
