@@ -5,14 +5,14 @@ let handler = async (m, { conn, text, command }) => {
       groupId: '120363422919131515@g.us',
       displayName: 'R1',
       targets: [
-        '6281212035575@s.whatsapp.net',
-        '6283830679936@s.whatsapp.net'
+        '6281212035575',
+        '6283830679936'
       ]
     },
     'rg2': {
       groupId: '120363422919131515@g.us',
       displayName: 'R2',
-      targets: ['628555555555@s.whatsapp.net']
+      targets: ['628555555555']
     },
     'rg3': {
       groupId: '120363422919131515@g.us',
@@ -22,16 +22,12 @@ let handler = async (m, { conn, text, command }) => {
     'rg4': {
       groupId: '120363422919131515@g.us',
       displayName: 'R4',
-      targets: [
-        '6281212035575@s.whatsapp.net'
-      ]
+      targets: ['6281212035575']
     },
     'rg5': {
       groupId: '120363422919131515@g.us',
       displayName: 'R5',
-      targets: [
-        '6281212035575@s.whatsapp.net'
-      ]
+      targets: ['6281212035575']
     }
   };
 
@@ -40,7 +36,6 @@ let handler = async (m, { conn, text, command }) => {
   if (!config) return m.reply(`Waduh, command *${command}* belum didaftarin di config nih.`);
 
   const { groupId, targets, displayName } = config;
-  const pesan = text || 'Panggilan penting ke ruang guru!';
 
   try {
     // Caching metadata buat hindarin rate limit
@@ -51,46 +46,79 @@ let handler = async (m, { conn, text, command }) => {
     }
 
     const groupMetadata = conn.groupCache[groupId];
-    const currentMembers = groupMetadata.participants.map(p => p.id);
+    const participants = groupMetadata.participants;
 
-    // Filter target yang valid (masih di grup)
-    const validMentions = targets.filter(t => currentMembers.includes(t));
+    // Convert target numbers ke LID format
+    const validMentions = [];
+    for (let number of targets) {
+      // Normalize number (hapus semua non-digit)
+      const cleanNumber = number.replace(/\D/g, '');
+      const jid = `${cleanNumber}@s.whatsapp.net`;
+      
+      // Cari participant yang match
+      const participant = participants.find(p => {
+        const pPhone = p.phoneNumber?.replace(/\D/g, '');
+        return pPhone === cleanNumber;
+      });
+      
+      if (participant && participant.id) {
+        // Pakai LID dari participant
+        validMentions.push(participant.id);
+      } else {
+        // Fallback: coba convert JID ke LID
+        const lid = conn.getLid(jid);
+        // Check apakah LID ada di participants
+        if (participants.some(p => p.id === lid)) {
+          validMentions.push(lid);
+        }
+      }
+    }
+
+    if (validMentions.length === 0) {
+      return m.reply(`⚠️ Gak ada target yang valid buat ${displayName}. Cek nomornya atau mereka udah keluar grup.`);
+    }
 
     console.log(`Valid mentions for ${displayName}:`, validMentions);
+
     // SUSUN PESAN UTAMA
     let messageText = `_Hallo Brainies, pejuang PTN 2026_\n\n`;
     messageText += `KHUSUS untuk jadwal pembelajaran SNBT akan share di grup ini ya, jadi kalau ada temennya yang belum masuk grup ini harap colek colek yaa temen-temen 😊\n\n`;
     messageText += `Jadwal hari ini\n`;
-    messageText += `Sesi 1  (17.00 - 20.30)\n- SNBT @${groupId}\n\n`;
-    messageText += `Sesi 2  (19.00 - 20.30)\n- SNBT @${groupId}\n\n`;
+    messageText += `Sesi 1  (17.00 - 20.30)\n- SNBT\n\n`;
+    messageText += `Sesi 2  (19.00 - 20.30)\n- SNBT\n\n`;
     messageText += `Info kelasnya sudah Kak Indri share kemarin di atas bisa di-scroll aja ya, atau bisa cek di aplikasi. Jika jadwal belum berubah, masih tahap penyesuaian jadwal kelas terbaru ya. Terima kasih 😊\n\n`;
 
-    // TAMBAHIN MENTION (Hijau beneran)
-    const aliasMention = validMentions.length > 1
-      ? validMentions.map((jid, i) => `@${displayName}${i + 1}`).join(' ')
-      : `@${displayName}`;
+    // METODE 1: Display custom alias dengan hidden mention
+    // Bikin alias text pendek
+    const aliasText = validMentions.length > 1
+      ? validMentions.map((_, i) => `${displayName}${i + 1}`).join(', ')
+      : displayName;
+    
+    messageText += `*Tag:* ${aliasText}\n`;
+    
+    // Hidden mention (pakai zero-width space)
+    const hiddenMentions = validMentions
+      .map(lid => `@${lid.split('@')[0]}`)
+      .join(' ');
+    
+    messageText += `\n‎${hiddenMentions}`; // ‎ = Left-to-Right Mark (U+200E)
 
-    messageText += aliasMention;
-
-    // KIRIM PESAN
+    // KIRIM PESAN dengan LID format
     await conn.sendMessage(groupId, {
       text: messageText,
-      contextInfo: {
-        mentionedJid: validMentions,
-        groupMentions: [
-          { groupSubject: `${displayName}`, groupJid: groupId }
-        ]
-      }
+      mentions: validMentions // Pakai LID format
     });
 
-    m.reply(`✅ Sukses manggil ${validMentions.length} orang di ${groupMetadata.subject}!`);
+    m.reply(`✅ Sukses manggil ${validMentions.length} orang (${aliasText}) di ${groupMetadata.subject}!`);
 
   } catch (e) {
-    console.error(e);
-    m.reply('⚠️ Gagal bosku. Cek ID grup-nya bener gak, atau bot-nya udah dikick?');
+    console.error('Error di ruangguru command:', e);
+    m.reply(`⚠️ Gagal bosku: ${e.message || 'Unknown error'}`);
   }
 };
 
 handler.command = /^(rg[1-5])$/i;
+handler.group = true;
+handler.admin = true;
 
 export default handler;
