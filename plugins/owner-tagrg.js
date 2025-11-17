@@ -104,9 +104,18 @@ let handler = async (m, { conn, text, command }) => {
     messageText += `\n‎${hiddenMentions}`; // ‎ = Left-to-Right Mark (U+200E)
 
     // KIRIM PESAN dengan LID format
+    // await conn.sendMessage(groupId, {
+    //   text: messageText,
+    //   mentions: validMentions // Pakai LID format
+    // });
     await conn.sendMessage(groupId, {
       text: messageText,
-      mentions: validMentions // Pakai LID format
+      contextInfo: {
+        mentionedJid: validMentions,
+        groupMentions: [
+          { groupSubject: `${displayName}`, groupJid: groupId }
+        ]
+      }
     });
 
     m.reply(`✅ Sukses manggil ${validMentions.length} orang (${aliasText}) di ${groupMetadata.subject}!`);
@@ -118,7 +127,5 @@ let handler = async (m, { conn, text, command }) => {
 };
 
 handler.command = /^(rg[1-5])$/i;
-handler.group = true;
-handler.admin = true;
 
 export default handler;
