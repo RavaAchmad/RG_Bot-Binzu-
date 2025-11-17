@@ -45,6 +45,11 @@ const {
 
 export function makeWASocket(connectionOptions, options = {}) {
    let conn = _makeWASocket(connectionOptions);
+   if (!conn.storeLid) conn.storeLid = {};
+   if (!conn.storeJid) conn.storeJid = {};
+   if (!conn.groupCache) conn.groupCache = {};
+   if (!conn.storeMentions) conn.storeMentions = {};
+   if (!conn.storeMentions) conn.storeMentions = {};   
    let sock = Object.defineProperties(conn, {
       // conn.chats
       chats: {
@@ -76,6 +81,35 @@ export function makeWASocket(connectionOptions, options = {}) {
             return jid.decodeJid();
          }
       },
+      getJid: {
+         value(lid) {
+            if (!conn.storeJid) conn.storeJid = {};
+            if (!lid || typeof lid !== "string") return "";
+            
+            const decoded = jidNormalizedUser(lid);
+            
+            // Kalau bukan LID, return langsung
+            if (!decoded.endsWith("@lid")) return decoded;
+            
+            // Check cache
+            if (conn.storeJid[decoded]) return conn.storeJid[decoded];
+            
+            // Cari di chats metadata
+            for (let chat of Object.values(conn.chats || {})) {
+               const participants = chat.metadata?.participants;
+               if (!participants) continue;
+               
+               const user = participants.find(p => jidNormalizedUser(p.id) === decoded);
+               if (user?.phoneNumber) {
+                  const jid = jidNormalizedUser(user.phoneNumber);
+                  conn.syncLidMapping(jid, decoded);
+                  return jid;
+               }
+            }
+            
+            return decoded;
+         }
+      },
       // conn.getNumber
       getNumber: {
          value(sender) {
@@ -97,6 +131,11 @@ export function makeWASocket(connectionOptions, options = {}) {
       syncLidMapping: {
          value(jid, lid) {
             if (!jid || !lid) return;
+            
+            // Double check storage exists
+            if (!conn.storeLid) conn.storeLid = {};
+            if (!conn.storeJid) conn.storeJid = {};
+            
             const normalizedJid = jidNormalizedUser(jid);
             const normalizedLid = jidNormalizedUser(lid);
             
