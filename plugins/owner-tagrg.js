@@ -1,9 +1,22 @@
 import { readConfig } from '../json/configManager.js';
-
+import { EventEmitter } from 'events';
+let commandCache = null;
+let commandCacheTime = 0;
+const COMMAND_CACHE_DURATION = 1000;
 let handler = async (m, { conn, text, command }) => {
+    EventEmitter.defaultMaxListeners = 20;
   try {
     // Load config dari brainiesDB.json
-    const brainiesDB = await readConfig();
+    const now = Date.now();
+    let brainiesDB;
+    if (commandCache && (now - commandCacheTime) < COMMAND_CACHE_DURATION) {
+      brainiesDB = commandCache;
+    } else {
+      brainiesDB = await readConfig();
+      commandCache = brainiesDB;
+      commandCacheTime = now;
+    }
+    // const brainiesDB = await readConfig();
     
     if (!brainiesDB || Object.keys(brainiesDB).length === 0) {
       return m.reply('⚠️ Gagal load database brainies. File kosong atau error.');
