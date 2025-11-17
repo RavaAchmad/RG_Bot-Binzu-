@@ -36,9 +36,6 @@ const {
    jidNormalizedUser,
    generateMessageIDV2
 } = await import("baileys");
-   if (!conn.storeLid) conn.storeLid = {};
-   if (!conn.storeJid) conn.storeJid = {};
-   if (!conn.groupCache) conn.groupCache = {};
 /**
  * Fungsi membuat socket ke baileys.
  * @param {Object} connectionOptions
