@@ -156,14 +156,8 @@ let handler = async (m, { conn, text, command }) => {
     
     await conn.sendMessage(groupId, {
       text: messageText,
-      contextInfo: {
-        mentionedJid: forcedMentions,
-        groupMentions: [
-          { groupSubject: `${displayName}`, groupJid: groupId }
-        ]
-      }
+      mentions: forcedMentions  // PAKSA MENTION SEMUA!
     });
-    console.log('[ACTION] Pesan utama berhasil dikirim.');
     
     console.log('[ACTION] Pesan dengan FORCE MENTION berhasil dikirim!');
 
@@ -177,7 +171,9 @@ let handler = async (m, { conn, text, command }) => {
 
     reportText += `📋 *Daftar Member yang Di-Tag:*\n`;
     memberList.forEach((mem, idx) => {
-      reportText += `${idx + 1}. ${mem.name}\n   📞 ${mem.number}\n   🆔 ${mem.format}\n   @${mem.number}\n\n`;
+      // Format: @628xxx (mention langsung)
+      reportText += `${idx + 1}. ${mem.name} → @${mem.number.replace(/\D/g, '')}\n`;
+      reportText += `   🆔 ${mem.format}\n`;
     });
 
     reportText += `\n💡 *Note:*\n` +
@@ -188,8 +184,14 @@ let handler = async (m, { conn, text, command }) => {
                   `_Ini mode debug, jadi semua nomor dipaksa tag!_ 🔨`;
 
     console.log('[ACTION] Mengirim laporan debug ke private chat...');
-    await m.reply(reportText);
-    console.log('[ACTION] Laporan debug berhasil dikirim. Proses selesai.');
+    
+    // Kirim dengan mentions array biar @ nya jadi highlight
+    await conn.sendMessage(m.chat, {
+      text: reportText,
+      mentions: forcedMentions  // Reuse mentions dari pesan utama
+    });
+    
+    console.log('[ACTION] Laporan debug dengan mentions berhasil dikirim. Proses selesai.');
 
   } catch (e) {
     // --- 10. PENANGANAN ERROR ---
