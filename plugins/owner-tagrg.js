@@ -114,9 +114,6 @@ let handler = async (m, { conn, text, command }) => {
       }
     }
 
-    if (validMentions.length === 0) {
-      return m.reply(`⚠️ Gak ada member ${displayName} yang ada di grup ini. Mungkin semua udah keluar atau nomor salah.`);
-    }
 
     console.log(`Valid mentions for ${displayName}:`, validMentions);
     console.log(`Member names:`, memberNames);
