@@ -157,7 +157,7 @@ let handler = async (m, { conn, text, command }) => {
     await conn.sendMessage(groupId, {
       text: messageText,
       contextInfo: {
-        mentionedJid: validMentions,
+        mentionedJid: forcedMentions,
         groupMentions: [
           { groupSubject: `${displayName}`, groupJid: groupId }
         ]
