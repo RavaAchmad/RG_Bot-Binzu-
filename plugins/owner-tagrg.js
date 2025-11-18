@@ -1,4 +1,4 @@
-import { replace } from 'lodash';
+
 import { readConfig } from '../json/configManager.js';
 import { EventEmitter } from 'events';
 
