@@ -154,13 +154,13 @@ let handler = async (m, { conn, text, command }) => {
                       `Info kelasnya sudah Kak Indri share kemarin di atas bisa di-scroll aja ya, atau bisa cek di aplikasi. Jika jadwal belum berubah, masih tahap penyesuaian jadwal kelas terbaru ya. Terima kasih 😊\n\n`;
 
     console.log(`[ACTION] Mengirim pesan FORCE MENTION ke grup ${groupId}...`);
-    console.log(`[DEBUG] Mentions array:`, forcedMentions.slice(0, 10)); // Log 10 pertama
+    console.log(`[DEBUG] Mentions array:`, forcedMentions.slice(0, 10)); 
     
     // await conn.sendMessage(groupId, {
     //   text: messageText,
     //   mentions: forcedMentions  // PAKSA MENTION SEMUA!
     // });
-    const teks = text.replace(/@tag/gi, `@${roomMap}`);
+    const teks = text.replace("@tag", await `@${roomMap}`);
     await conn.sendMessage(groupId, {
       text: teks,
       contextInfo: {
