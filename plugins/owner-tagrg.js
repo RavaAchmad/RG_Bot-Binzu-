@@ -46,7 +46,8 @@ let handler = async (m, { conn, text, command }) => {
       'rg2': 'R2',
       'rg3': 'R3',
       'rg4': 'R4',
-      'rg5': 'R5'
+      'rg5': 'R5',
+      'rg6': 'R6'
     };
     const displayName = roomMap[command.toLowerCase()];
     console.log(`[DEBUG] Command "${command}" dipetakan ke room: "${displayName}"`);
@@ -213,6 +214,6 @@ let handler = async (m, { conn, text, command }) => {
   }
 };
 
-handler.command = /^(rg[1-5])$/i;
+handler.command = /^(rg[1-6])$/i;
 
 export default handler;
