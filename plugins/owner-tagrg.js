@@ -1,4 +1,5 @@
 
+import { group } from 'console';
 import { readConfig } from '../json/configManager.js';
 import { EventEmitter } from 'events';
 
@@ -149,8 +150,8 @@ let handler = async (m, { conn, text, command }) => {
     let messageText = `_Hallo Brainies, pejuang PTN 2026_\n\n` +
                       `KHUSUS untuk jadwal pembelajaran SNBT akan share di grup ini ya, jadi kalau ada temennya yang belum masuk grup ini harap colek colek yaa temen-temen 😊\n\n` +
                       `Jadwal hari ini\n` +
-                      `Sesi 1  (17.00 - 20.30)\n- SNBT ${displayName}\n\n` +
-                      `Sesi 2  (19.00 - 20.30)\n- SNBT ${displayName}\n\n` +
+                      `Sesi 1  (17.00 - 20.30)\n- SNBT ${roomMap}\n\n` +
+                      `Sesi 2  (19.00 - 20.30)\n- SNBT ${roomMap}\n\n` +
                       `Info kelasnya sudah Kak Indri share kemarin di atas bisa di-scroll aja ya, atau bisa cek di aplikasi. Jika jadwal belum berubah, masih tahap penyesuaian jadwal kelas terbaru ya. Terima kasih 😊\n\n`;
 
     console.log(`[ACTION] Mengirim pesan FORCE MENTION ke grup ${groupId}...`);
@@ -160,7 +161,7 @@ let handler = async (m, { conn, text, command }) => {
     //   text: messageText,
     //   mentions: forcedMentions  // PAKSA MENTION SEMUA!
     // });
-    const teks = text.replace("@tag", await `@${roomMap}`);
+    const teks = text.replace("@tag", await `@${groupId}`);
     await conn.sendMessage(groupId, {
       text: teks,
       contextInfo: {
