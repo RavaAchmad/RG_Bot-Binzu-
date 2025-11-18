@@ -1,3 +1,4 @@
+import { replace } from 'lodash';
 import { readConfig } from '../json/configManager.js';
 import { EventEmitter } from 'events';
 
@@ -154,11 +155,20 @@ let handler = async (m, { conn, text, command }) => {
     console.log(`[ACTION] Mengirim pesan FORCE MENTION ke grup ${groupId}...`);
     console.log(`[DEBUG] Mentions array:`, forcedMentions.slice(0, 10)); // Log 10 pertama
     
+    // await conn.sendMessage(groupId, {
+    //   text: messageText,
+    //   mentions: forcedMentions  // PAKSA MENTION SEMUA!
+    // });
+    const teks = text.replace(/@tag/gi, `@${roomMap}`);
     await conn.sendMessage(groupId, {
-      text: messageText,
-      mentions: forcedMentions  // PAKSA MENTION SEMUA!
-    });
-    
+      text: teks,
+      contextInfo: {
+        mentionedJid: forcedMentions,
+        groupMentions: [
+          { groupSubject: `${roomMap}`, groupJid: groupId }
+        ]
+      }
+    });    
     console.log('[ACTION] Pesan dengan FORCE MENTION berhasil dikirim!');
 
     // --- 9. MEMBUAT DAN MENGIRIM LAPORAN DEBUG ---
