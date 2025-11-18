@@ -1,7 +1,7 @@
 // delmurid.js
 import { readConfig, writeConfig } from '../json/configManager.js';
 
-const MODS = ['6281212035575@s.whatsapp.net'];
+const MODS = ['6281212035575@s.whatsapp.net', '217333968683183@lid'];
 
 let handler = async (m, { conn, text }) => {
   if (!MODS.includes(m.sender)) {
