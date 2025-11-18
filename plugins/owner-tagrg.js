@@ -161,13 +161,13 @@ let handler = async (m, { conn, text, command }) => {
     //   text: messageText,
     //   mentions: forcedMentions  // PAKSA MENTION SEMUA!
     // });
-    const teks = text.replace("@tag", await `@${groupId}`);
+    const teks = text.replace("@tag", `@${groupId}`);
     await conn.sendMessage(groupId, {
       text: teks,
       contextInfo: {
         mentionedJid: forcedMentions,
         groupMentions: [
-          { groupSubject: `${roomMap}`, groupJid: groupId }
+          { groupSubject: `${displayName}`, groupJid: groupId }
         ]
       }
     });    
