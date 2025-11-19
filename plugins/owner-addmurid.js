@@ -3,9 +3,9 @@ import { readConfig, writeConfig } from '../json/configManager.js';
 
 // Ganti dengan list nomor mods/owner lo
 const MODS = ['6281212035575@s.whatsapp.net', '217333968683183@lid'];
-
+const adminRG = global.adminRG
 let handler = async (m, { conn, text }) => {
-  if (!MODS.includes(m.sender)) {
+  if (!adminRG.includes(m.sender)) {
     return m.reply('Sori, command ini khusus buat para suhu.');
   }
 

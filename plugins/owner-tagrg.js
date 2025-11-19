@@ -8,9 +8,14 @@ let commandCache = null;
 let commandCacheTime = 0;
 const COMMAND_CACHE_DURATION = 1000; // Cache berlaku selama 1 detik
 
-// Handler utama
+// Handler utamaconst adminRG = global.adminRG
+
 let handler = async (m, { conn, text, command }) => {
   // Menaikkan batas listener untuk menghindari warning
+  const adminRG = global.adminRG
+    if (!adminRG.includes(m.sender)) {
+    return m.reply('Sori, command ini khusus buat para suhu.');
+  }
   EventEmitter.defaultMaxListeners = 20;
   console.log(`[DEBUG] Handler dimulai untuk command: "${command}"`);
 

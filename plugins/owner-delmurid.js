@@ -1,11 +1,10 @@
 // delmurid.js
 import { readConfig, writeConfig } from '../json/configManager.js';
 
-const MODS = ['6281212035575@s.whatsapp.net', '217333968683183@lid'];
-
+const adminRG = global.adminRG
 let handler = async (m, { conn, text }) => {
-  if (!MODS.includes(m.sender)) {
-    return m.reply('Lo bukan suhu, gaboleh pake ini.');
+  if (!adminRG.includes(m.sender)) {
+    return m.reply('Sori, command ini khusus buat para suhu.');
   }
 
   // Format: .delmurid <Rombel> <"Nama Murid"> [Nomor Spesifik]
