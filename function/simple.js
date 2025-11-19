@@ -19,6 +19,7 @@ import { watchFile, unwatchFile } from "fs";
 import { fileURLToPath } from "url";
 import { toAudio } from "./converter.js";
 import { imageToWebp, videoToWebp, writeExifImg, writeExifVid } from "./exif.js";
+import { promisify } from 'util';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

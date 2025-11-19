@@ -369,64 +369,110 @@ export async function handler(chatUpdate) {
  * @param {import('baileys').BaileysEventMap<unknown>['group-participants.update']} groupsUpdate
  */
 export async function participantsUpdate({ id, participants, action }) {
-	if (opts['self'])
-		return    
+    if (opts['self']) return;
+    
     try {
         if (this.isHandlerInit) return;
         let chat = global.db.data?.chats[id] || {};
+
+        // === FIX 1: Limit concurrent operations ===
+        if (participants.length > 5) {
+            console.warn('[RATE LIMIT] Too many participants, limiting to 5');
+            participants = participants.slice(0, 5);
+        }
 
         let message;
         switch (action) {
             case "add":
             case "remove":
                 if (chat?.sambutan) {
-                    let groupMetadata = (await this.groupMetadata(id)) || (conn.chats[id] || {})?.metadata || {};
+                    // === FIX 2: Cache group metadata ===
+                    let groupMetadata = conn.chats[id]?.metadata;
+                    
+                    if (!groupMetadata) {
+                        try {
+                            groupMetadata = await this.groupMetadata(id);
+                            if (!conn.chats[id]) conn.chats[id] = {};
+                            conn.chats[id].metadata = groupMetadata;
+                        } catch (error) {
+                            if (error.data === 429) {
+                                console.error('[RATE LIMIT] Skipping welcome, rate limited');
+                                return; // SKIP if rate limited
+                            }
+                            groupMetadata = { id, subject: 'Group', participants: [] };
+                        }
+                    }
+                    
                     for (let user of participants) {
                         let lid = (user?.id).decodeJid();
                         if (!lid) continue;
 
-                        if (lid.endsWith("@s.whatsapp.net")) lid = await conn.getLidPN(lid);
+                        if (lid.endsWith("@s.whatsapp.net")) {
+                            try {
+                                lid = await conn.getLidPN(lid);
+                            } catch (e) {
+                                console.error('[LID ERROR]:', e.message);
+                                continue;
+                            }
+                        }
 
-                        let pp;
+                        // === FIX 3: Skip PP fetch if rate limited ===
+                        let pp = null;
                         try {
                             pp = { url: await conn.profilePictureUrl(lid, "image") };
                         } catch (e) {
-                            pp = { url: await conn.profilePictureUrl(id, "image") };
+                            if (e.data === 429 || e.status === 404) {
+                                pp = null; // Use text only
+                            } else {
+                                console.error('[PP ERROR]:', e.message);
+                                pp = null;
+                            }
                         }
 
                         message = (
                             action === "add"
                                 ? (chat.sWelcome || conn.sWelcome || "Selamat Datang @user")
-                                      .replace("@subject", await this.getName(id))
+                                      .replace("@subject", groupMetadata.subject || "Group")
                                       .replace("@desc", groupMetadata.desc ? String.fromCharCode(8206).repeat(4001) + groupMetadata?.desc : "")
                                 : chat.sBye || conn.sBye || "Selamat Tinggal @user"
                         ).replace("@user", "@" + lid.split("@")[0]);
 
                         try {
-                            await this.sendMessage(
-                                id,
-                                {
-                                    image: pp,
-                                    caption: message,
-                                    mimetype: "image/jpeg",
-                                    contextInfo: {
-                                        mentionedJid: [lid]
-                                    }
-                                },
-                                { quoted: null }
-                            );
+                            if (pp) {
+                                await this.sendMessage(
+                                    id,
+                                    {
+                                        image: pp,
+                                        caption: message,
+                                        mimetype: "image/jpeg",
+                                        contextInfo: {
+                                            mentionedJid: [lid]
+                                        }
+                                    },
+                                    { quoted: null }
+                                );
+                            } else {
+                                await this.sendMessage(
+                                    id,
+                                    {
+                                        text: message,
+                                        contextInfo: {
+                                            mentionedJid: [lid]
+                                        }
+                                    },
+                                    { quoted: null }
+                                );
+                            }
                         } catch (e) {
-                            await this.sendMessage(
-                                id,
-                                {
-                                    text: message,
-                                    contextInfo: {
-                                        mentionedJid: [lid]
-                                    }
-                                },
-                                { quoted: null }
-                            );
+                            if (e.data === 429) {
+                                console.error('[RATE LIMIT] Hit limit, stopping welcome messages');
+                                return; // STOP if rate limited
+                            }
+                            console.error('[SEND ERROR]:', e.message);
                         }
+                        
+                        // === FIX 4: Delay between messages ===
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
                     }
                 }
                 break;
@@ -438,27 +484,47 @@ export async function participantsUpdate({ id, participants, action }) {
                         let lid = (user?.id).decodeJid();
                         if (!lid) continue;
 
-                        if (lid.endsWith("@s.whatsapp.net")) lid = await conn.getLidPN(lid);
+                        if (lid.endsWith("@s.whatsapp.net")) {
+                            try {
+                                lid = await conn.getLidPN(lid);
+                            } catch (e) {
+                                continue;
+                            }
+                        }
+                        
                         message = (
-                            action === "promote" ? chat.sPromote || conn.sPromote || "Selamat @user telah menjadi Admin" : chat.sDemote || conn.sDemote || "@user telah diberhentikan sebagai Admin"
+                            action === "promote" 
+                                ? chat.sPromote || conn.sPromote || "Selamat @user telah menjadi Admin" 
+                                : chat.sDemote || conn.sDemote || "@user telah diberhentikan sebagai Admin"
                         ).replace("@user", "@" + lid.split("@")[0]);
 
-                        await this.sendMessage(
-                            id,
-                            {
-                                text: message,
-                                contextInfo: {
-                                    mentionedJid: [lid]
-                                }
-                            },
-                            { quoted: null }
-                        );
+                        try {
+                            await this.sendMessage(
+                                id,
+                                {
+                                    text: message,
+                                    contextInfo: {
+                                        mentionedJid: [lid]
+                                    }
+                                },
+                                { quoted: null }
+                            );
+                        } catch (e) {
+                            if (e.data === 429) {
+                                console.error('[RATE LIMIT] Hit limit, stopping');
+                                return;
+                            }
+                            console.error('[SEND ERROR]:', e.message);
+                        }
+                        
+                        // Delay
+                        await new Promise(resolve => setTimeout(resolve, 1500));
                     }
                 }
                 break;
         }
     } catch (e) {
-        console.error(e);
+        console.error('[PARTICIPANTS UPDATE ERROR]:', e);
     }
 }
 
