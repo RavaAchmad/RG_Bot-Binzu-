@@ -10,6 +10,7 @@ import moment from "moment-timezone";
 
 // ===== CONFIG =====
 global.owner = ["6281212035575"];
+global.ownerLid = ["217333968683183@lid"]
 global.adminRG = ["6281212035575@s.whatsapp.net", "628987029543@s.whatsapp.net", "6281268629687@s.whatsapp.net", "120370938015880@lid", "244431001268468@lid", "217333968683183@lid"]
 global.info = {
     nomorbot: "081212035575",
