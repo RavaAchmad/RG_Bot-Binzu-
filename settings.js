@@ -23,7 +23,7 @@ global.info = {
 global.thum = "https://qu.ax/NvoLP.jpg";
 
 // ===== OPTIONS =====
-global.autoRead = true; // OPSIONAL
+global.autoRead = false; // OPSIONAL
 global.stage = {
     wait: "*Memproses permintaan!!*",
     error: "*Gagal Memproses permintaan*"

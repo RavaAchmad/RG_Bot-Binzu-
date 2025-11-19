@@ -129,7 +129,7 @@ export async function handler(chatUpdate) {
             let setting = global.db.data.settings[decodedBotLid];
             if (typeof setting !== "object") global.db.data.settings[decodedBotLid] = {};
             if (setting) {
-                if (!('self' in setting)) setting.self = false 
+                if (!('self' in setting)) setting.self = true;
                 if (!("chatMode" in setting)) setting.chatMode = ""; 
                 if (!("antispam" in setting)) setting.antispam = true;
                 if (!("autoread" in setting)) setting.autoread = true;
@@ -137,7 +137,7 @@ export async function handler(chatUpdate) {
                 if (!isNumber(setting.backupDate)) setting.backupDate = -1;
             } else
                 global.db.data.settings[decodedBotLid] = {
-                    self: false, 
+                    self: true, 
                     chatMode: "", 
                     antispam: true,
                     autoread: true,
