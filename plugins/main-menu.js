@@ -15,22 +15,24 @@ let tags = {
 
 // Template Tampilan Menu
 const defaultMenu = {
-    before: `Hallo %name! 👋
-Saya adalah Bot Otomatis yang siap membantu Anda 24/7!
- 
-*「  I N F O  B O T  」*
- •  *Mode :* %mode
- •  *Nama :* %me
- •  *Versi :* %version
- •  *Limits :* %limit
- •  *Uptime :* %uptime
- 
-*「  I N F O  S E R V E R  」*
- •  *Platform :* %platform
- •  *OS :* %serverOS
- •  *Arch :* %serverArch
- •  *CPU :* %cpuModel
- •  *RAM :* %freeMem / %totalMem
+    before: `
+%name.
+Akses terbuka. Berikut rangkuman sistem aktif.
+
+[ STATUS BOT ]
+Mode    : %mode
+Nama    : %me
+Versi   : %version
+Limit   : %limit
+Uptime  : %uptime
+
+[ STATUS SERVER ]
+Platform: %platform
+OS      : %serverOS
+Arch    : %serverArch
+CPU     : %cpuModel
+RAM     : %freeMem / %totalMem
+
 %readmore
 `.trimStart(),
     header: '╭─「 *%category* 」',
